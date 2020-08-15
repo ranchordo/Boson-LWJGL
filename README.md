@@ -1,4 +1,4 @@
-#Boson-LWJGL\
+# Boson-LWJGL\
 This is a recreation of the game BosonX by Mu and Heyo. This recreation uses the LightWeight Java Game Library to improve performance. All credit for level design, original game idea, and awesomeness go to them. I just made a copy.\
 Everything from the "resources" folder was taken from a decompilation of the BosonX Android app.\
 
