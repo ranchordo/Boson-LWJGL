@@ -1,5 +1,5 @@
 # Boson-LWJGL  
-This is a recreation of the game Boson X by Mu and Heyo. This recreation uses the LightWeight Java Game Library to improve performance. All credit for level design, original game idea, and awesomeness go to them. I just rewrote everything.  
+Boson-LWJGL is a re-creation of the game Boson X by Mu and Heyo. This re-creation uses the LightWeight Java Game Library to improve performance. All credit for level design, original game idea, and awesomeness go to them. I just rewrote everything.  
 I did not use any of their code. I used their assets, but the control logic and other programming is mine.
 Everything from the "resources" folder (except for "shaders") was taken from a decompilation of the BosonX Android app. Ignore the SyncToy.dat files.  
   
@@ -18,7 +18,7 @@ The easiest way to execute Boson-LWJGL is to just run /jar/Boson-LWJGL.jar.
   
 I will delete or edit these statements as I update this game:
 *This is still in progress.* Whenever I have new functionality, I will sync everything over to here.  
-*I expect that the final recreation* will use LWJGL 3.2 with the following bindings:  
+*I expect that the final re-creation* will use LWJGL 3.2 with the following bindings:  
 1. LWJGL core  
 2. LWJGL-OpenGL  
 3. LWJGL-GLFW  
