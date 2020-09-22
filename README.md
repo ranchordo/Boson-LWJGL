@@ -18,7 +18,6 @@ The easiest way to execute Boson-LWJGL is to just run /jar/Boson-LWJGL.jar.
   
 I will delete or edit these statements later:  
 *This is still in progress.* Whenever I have new functionality, I will sync everything over to here.  
-*This repo is still private.* That\'s because I am still waiting to hear back from the original developers about my legal ability to release this recreation.  
 *I expect that the final recreation* will use LWJGL 3.2 with the following bindings:  
 1. LWJGL core  
 2. LWJGL-OpenGL  
