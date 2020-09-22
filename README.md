@@ -19,3 +19,8 @@ I will delete or edit these statements as I update this game:
 3. LWJGL-GLFW  
 4. LWJGL-OpenAL  
 5. LWJGL-OpenCL  
+At the minute it uses  
+1. LWJGL core  
+2. LWJGL-OpenGL  
+3. LWJGL-GLFW  
+4. LWJGL-OpenAL  
