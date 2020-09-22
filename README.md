@@ -4,6 +4,11 @@ Everything from the "resources" folder (except for "shaders") was taken from a d
   
 A word about itstate.scrr:  
 itstate.scrr is a score record file, hence the extension "scrr". If you delete this file, your high scores will be lost.  
+An itstate.scrr file will be created if it does not exist on program run, in the same directory as the program main path, or, more precisely,  
+```java
+new File(BosonX.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile().getAbsolutePath()
+```
+It will be fetched from the same place if it exists on program run.  
 There may be an itstate.scrr in /jar/ if I test the .jar before I push this and forget to delete it.  
 It also might have a score under level 1 if I briefly test the level functionality.  
 If you do not like this, just delete itstate.scrr and restart Boson-LWJGL.  
