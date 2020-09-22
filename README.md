@@ -16,7 +16,7 @@ If you do not like this, just delete itstate.scrr and restart Boson-LWJGL.
   
 The easiest way to execute Boson-LWJGL is to just run /jar/Boson-LWJGL.jar.
   
-I will delete or edit these statements later:  
+I will delete or edit these statements as I update this game:
 *This is still in progress.* Whenever I have new functionality, I will sync everything over to here.  
 *I expect that the final recreation* will use LWJGL 3.2 with the following bindings:  
 1. LWJGL core  
