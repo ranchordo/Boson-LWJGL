@@ -2,7 +2,7 @@
 This is a recreation of the game BosonX by Mu and Heyo. This recreation uses the LightWeight Java Game Library to improve performance. All credit for level design, original game idea, and awesomeness go to them. I just made a copy.  
 Everything from the "resources" folder (except for "shaders") was taken from a decompilation of the BosonX Android app.  
   
-# A word about itstate.scrr:  
+A word about itstate.scrr:  
 itstate.scrr is a score record file, hence the extension "scrr". If you delete this file, your high scores will be lost.  
 There may be an itstate.scrr in /jar/ if I test the .jar before I push this and forget to delete it.  
 It also might have a score under level 1 if I briefly test the level functionality.  
