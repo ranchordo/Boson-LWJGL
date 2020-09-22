@@ -25,6 +25,10 @@
 #|  |P1|  |  |  |  |  |  |  |  |
 #;
 
+#In order to run this script, put .lua files in the same directory as this
+#script and run it. It will create corresponding pattern files in the
+#Boson-LWJGL format.
+
 i=101
 f=open("patterns_stage"+str(i)+".lua","r")
 fo=open("./patterns_"+str(i)+".txt","w+")
