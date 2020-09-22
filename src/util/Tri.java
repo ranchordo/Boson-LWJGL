@@ -1,6 +1,7 @@
 package util;
 
 public class Tri {
+	//Pretty much a duplicate of Quad but with 3 verts.
 	public float[] color= {0.0f,0.0f,0.0f,1.0f};
 	public float[] normal;
 	public float[][] vertices={

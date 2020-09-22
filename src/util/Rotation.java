@@ -1,8 +1,7 @@
 package util;
-/*
- * 
- */
+
 public class Rotation {
+	//This just stores a rotation value and can render it.
 	public float x;
 	public float y;
 	public float z;

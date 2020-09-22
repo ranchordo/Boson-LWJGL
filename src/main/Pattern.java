@@ -13,7 +13,7 @@ public class Pattern {
 		specials=new ArrayList<Cell>();
 		specialIDs=new ArrayList<Integer>();
 	}
-	public void initCells() {
+	public void initCells() { //Do our init routine for specials and normals alike
 		for(int i=0;i<rows.size();i++) {
 			for(Cell c1 : rows.get(i)) {
 				c1.numpoles=numPoles;
@@ -30,7 +30,7 @@ public class Pattern {
 			specials.get(i).calculateConsts();
 		}
 	}
-	public void rotate(float p) {
+	public void rotate(float p) { //These are methods that just do the same thing on every cell
 		for(Cell[] c : rows) {
 			for(Cell c1 : c) {
 				c1.rotate(p);
@@ -54,7 +54,7 @@ public class Pattern {
 			c1.initGeo();
 		}
 	}
-	public void addHoldingRoutine() {
+	public void addHoldingRoutine() { //Add to our pergatory in main.BosonX
 		for(int ci=0;ci<rows.size();ci++) {
 			for(Cell c1 : rows.get(ci)) {
 				if(c1.geometry.quads.size()!=0) {BosonX.m.holding.add(c1);}

@@ -7,23 +7,19 @@ import java.util.*;
 public class Cellparser {
 	String f_contents="";
 	public int level;
-	public void point(int stage) {
+	public void point(int stage) { //Fetch the next pattern file
 		level=stage;
 		f_contents="";
-		try {
-			File f=new File("resources/patterns_"+Integer.toString(stage)+".txt");
-			Scanner s=new Scanner(f);
-			while(s.hasNextLine()) {
-				String ln=s.nextLine();
-				f_contents=f_contents+ln+"\n";
-			}
-			s.close();
-		} catch (FileNotFoundException e) {
-			System.out.println("Error grabbing data from pattern files!");
-			System.exit(1);
+		InputStream f=BosonX.class.getResourceAsStream("/patterns_"+Integer.toString(stage)+".txt");
+		//InputStream f=BosonX.class.getResourceAsStream("/patterns_jon.txt");
+		Scanner s=new Scanner(f);
+		while(s.hasNextLine()) {
+			String ln=s.nextLine();
+			f_contents=f_contents+ln+"\n";
 		}
+		s.close();
 	}
-	public ArrayList<Pattern> parsePatterns() {
+	public ArrayList<Pattern> parsePatterns() { //Get a list of patterns in our file (This is boooring parsing work)
 		assert !f_contents.equals("");
 		
 		String[] patternstrs=f_contents.split("\n;\n");
@@ -72,12 +68,12 @@ public class Cellparser {
 		}
 		return patterns;
 	}
-	public Pattern parsePattern(int p) {
+	public Pattern parsePattern(int p) { //Parse a specific pattern from an index
 		assert !f_contents.equals("");
 		String[] pstrs=f_contents.split("\n;\n");
 		return pstr(pstrs[p]);
 	}
-	public Cell[] frow(int p) {
+	public Cell[] frow(int p) { //First row of a pattern
 		assert !f_contents.equals("");
 		String[] pstrs=f_contents.split("\n;\n");
 		int numpoles=-1;
@@ -109,7 +105,7 @@ public class Cellparser {
 		}
 		return cells;
 	}
-	public Cell[] lrow(int p) {
+	public Cell[] lrow(int p) { //Last row of a pattern
 		assert !f_contents.equals("");
 		String[] pstrs=f_contents.split("\n;\n");
 		int numpoles=-1;
@@ -141,11 +137,11 @@ public class Cellparser {
 		}
 		return cells;
 	}
-	public int numPatterns() {
+	public int numPatterns() { //Number of patterns
 		assert !f_contents.equals("");
 		return f_contents.split("\n;\n").length;
 	}
-	public Pattern pstr(String pstr) {
+	public Pattern pstr(String pstr) { //Parse a single pattern string (boooooring parsing)
 		int numpoles=-1;
 		for(char i : pstr.split("\n",0)[0].toCharArray()) {if(i=='|') {numpoles++;}}
 		assert numpoles>1;

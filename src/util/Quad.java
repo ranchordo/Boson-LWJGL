@@ -1,6 +1,7 @@
 package util;
 
 public class Quad {
+	//A quad. That's it. That's all it is.
 	public float[] color= {0.0f,0.0f,0.0f,1.0f};
 	public float[] normal;
 	public float[][] vertices={
@@ -49,14 +50,14 @@ public class Quad {
 		normal[2]/=mag;
 		return this;
 	}
-	public Quad setNormal(float x, float y, float z, boolean n) {
+	public Quad setNormal(float x, float y, float z, boolean n) { //Set the normal.
 		this.normal=new float[] {x, y, z};
 		if(n) {
 			normalizeNormal();
 		}
 		return this;
 	}
-	public Quad autoNormal(float x, float y, float z) {
+	public Quad autoNormal(float x, float y, float z) { //Get the normal of this quad that's closest to the specified one.
 		float[] v1=new float[] {vertices[0][0]-vertices[1][0],vertices[0][1]-vertices[1][1],vertices[0][2]-vertices[1][2]};
 		float[] v2=new float[] {vertices[0][0]-vertices[2][0],vertices[0][1]-vertices[2][1],vertices[0][2]-vertices[2][2]};
 		float[] cd1=new float[3];
@@ -71,6 +72,7 @@ public class Quad {
 		} else {
 			this.normal=cd2;
 		}
+		normalizeNormal();
 		return this;
 	}
 }

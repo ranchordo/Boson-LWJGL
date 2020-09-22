@@ -1,19 +1,23 @@
 package util;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 public class GObject {
 	public ArrayList<Quad> quads=new ArrayList<Quad>();
 	public ArrayList<Tri> tris=new ArrayList<Tri>();
 	public float[] translation= {0.0f,0.0f,0.0f};
+	public float[] post= {0,0,0};
+	public ArrayList<GObject> attached=new ArrayList<GObject>();
 	float[] scale= {1,1,1};
-	Rotation rotation;
+	public Rotation rotation;
 	String name;
 	public float lighting;
+	public boolean rotationalLighting=false;
+	public boolean asMesh=false;
 	public GObject scale(float x, float y, float z) {
 		scale[0]*=x;
 		scale[1]*=y;
@@ -24,7 +28,7 @@ public class GObject {
 		scale=new float[] {x,y,z};
 		return this;
 	}
-	public GObject(int rot_type) {
+	public GObject(int rot_type) { //Rotation type controls whether it's a vector or orthogonal rotation. I never implemented vector rotation.
 		if(rot_type==0) {
 			rotation=new Rotation(0,0,0,0);
 		} else if(rot_type==1) {
@@ -41,25 +45,38 @@ public class GObject {
 		name=nm;
 	}
 	public void renderTransforms() {
-		main.BosonX.m.r.translate_encap(translation[0],translation[1],translation[2]);
+		main.BosonX.m.r.translate_encap(translation[0],translation[1],translation[2]); //Why am I using renderer encaps here?
 		main.BosonX.m.r.scale_encap(scale[0],scale[1],scale[2]);
 		rotation.renderRotation();
+		main.BosonX.m.r.translate_encap(post[0],post[1],post[2]);
 	}
-	public void translate(float x, float y, float z) {
+	public void translate(float x, float y, float z) { //Recursive transformation methods
 		translation[0]+=x;
 		translation[1]+=y;
 		translation[2]+=z;
+		for(GObject o : attached) {
+			o.translate(x,y,z);
+		}
 	}
 	public void rotate(float x, float y, float z) {
 		rotation.rotate(x, y, z);
+		for(GObject o : attached) {
+			o.rotate(x,y,z);
+		}
 	}
 	public void setTranslation(float x, float y, float z) {
 		translation[0]=x;
 		translation[1]=y;
 		translation[2]=z;
+		for(GObject o : attached) {
+			o.setTranslation(x,y,z);
+		}
 	}
 	public void setRotation(float x, float y, float z) {
 		rotation.setRotation(x,y,z);
+		for(GObject o : attached) {
+			o.setRotation(x,y,z);
+		}
 	}
 	public void setColor(float r, float g, float b) {
 		for(Quad q : quads) {
@@ -69,10 +86,10 @@ public class GObject {
 			t.setColor(r, g, b);
 		}
 	}
-	public GObject loadOBJ(String filename) {
+	public GObject loadOBJ(String filename) { //Wavefront file parser "frontend"
 		quads=new ArrayList<Quad>();
 		try {
-			tris=loadOBJ_raw(new File(filename));
+			tris=loadOBJ_raw(main.BosonX.class.getResourceAsStream(filename));
 		} catch(FileNotFoundException e) {
 			System.out.println(filename+" does not appear to exist.");
 			System.exit(1);
@@ -82,7 +99,7 @@ public class GObject {
 		}
 		return this;
 	}
-	public GObject append(GObject a) {
+	public GObject append(GObject a) { //Add a GObject to another
 		for(Quad q : a.quads) {
 			quads.add(q);
 		}
@@ -91,8 +108,8 @@ public class GObject {
 		}
 		return this;
 	}
-	public ArrayList<Tri> loadOBJ_raw(File f) throws FileNotFoundException, IOException {
-		BufferedReader reader=new BufferedReader(new FileReader(f));
+	public ArrayList<Tri> loadOBJ_raw(InputStream f) throws FileNotFoundException, IOException { //Wavefront file parser!
+		BufferedReader reader=new BufferedReader(new InputStreamReader(f));
 		String line;
 		ArrayList<Vector3f> vertices=new ArrayList<Vector3f>();
 		ArrayList<Vector3f> normals=new ArrayList<Vector3f>();

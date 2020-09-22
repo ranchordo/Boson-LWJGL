@@ -1,6 +1,7 @@
 package util;
 
 public class Vector4f {
+	//Does this really need explaining?
 	public float x;
 	public float y;
 	public float z;
