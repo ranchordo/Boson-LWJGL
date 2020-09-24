@@ -1,8 +1,9 @@
 # Boson-LWJGL  
 Boson-LWJGL is a re-creation of the game Boson X by Mu and Heyo. This re-creation uses the LightWeight Java Game Library to improve performance. All credit for level design, original game idea, and general awesomeness go to them. I just rewrote everything.  
 You can find the original game here: <http://boson-x.com>.  
+Boson-LWJGL is designed for the Boson X modding community. With a documented, open source re-creation of this game, modifications to the core functionality of the game are easier.  
 I did not use any of their code. I used their assets for this re-creation, but I have written all of the source code for Boson-LWJGL.
-Everything from the "resources" folder (except for "shaders") was taken from a decompilation of the BosonX Android app. The SyncToy.dat files are artifacts left over from the program I'm using to copy and update files from my eclipse project directory to my Github repo directory, and they are not critical to the function of Boson-LWJGL in any way.  
+Everything from the "resources" folder (except for "shaders") was taken from a decompilation of the Boson X Android app. The SyncToy.dat files are artifacts left over from the program I'm using to copy and update files from my eclipse project directory to my Github repo directory, and they are not critical to the function of Boson-LWJGL in any way.  
 **The images and audio from the original game are copyright Jon Kerny and Ian MacLarty, respectively, and I am using them with permission. Any licensing on the source code for Boson-LWJGL does not apply to the images and audio, i.e. the image and audio assets are not licensed under a GNU General Public License.**  
   
 A word about itstate.scrr:  
