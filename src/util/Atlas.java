@@ -10,8 +10,6 @@ import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 
-import com.mortennobel.imagescaling.ResampleOp;
-
 public class Atlas {//This is a weird one. Prepare for nonsense.
 	/*
 	 * This is for drawing non-monospaced font atlases to a BufferedImage. It has adaptive glyph bounds recognition and is excessively fancy.
@@ -274,22 +272,5 @@ public class Atlas {//This is a weird one. Prepare for nonsense.
 		//System.out.println();
 		BufferedImage string=stringId(ids,col);
 		return size(string,scale);
-	}
-	public BufferedImage sstring_anti(String s, float scale) { //Scaled string, but antialiased! (Performance is _terrible_)
-		char[] al=atlas_layout.toCharArray();
-		char[] sc=s.toCharArray();
-		int[] ids=new int[sc.length];
-		for(int i=0;i<sc.length;i++) {
-			ids[i]=-1;
-			for(int j=0;j<al.length;j++) {
-				if(sc[i]==al[j]) {
-					ids[i]=j;
-					break;
-				}
-			}
-		}
-		BufferedImage string=stringId(ids);
-		ResampleOp resamp=new ResampleOp((int) (string.getWidth()*scale),(int) (string.getHeight()*scale));
-		return resamp.filter(string,null);
 	}
 }

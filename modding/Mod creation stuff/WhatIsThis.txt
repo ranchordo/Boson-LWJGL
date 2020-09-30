@@ -1,0 +1,1 @@
+This is a folder with some tools and guides and examples that can help you mod this game. In here you'll probably find things like pattern converters, guides to each asset (they're pretty self explanatory), etc.
