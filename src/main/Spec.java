@@ -14,6 +14,8 @@ public class Spec {
 			BosonX.m.jump_relative=0.2f;
 			BosonX.m.jump_duration=135;
 			
+			
+			
 			BosonX.m.speed0=0.4f;
 			BosonX.m.speed1=0.75f;
 			BosonX.m.gravity_i=0.2f;

@@ -22,6 +22,7 @@ I will delete or edit these statements as I update this game:
 3. LWJGL-GLFW  
 4. LWJGL-OpenAL  
 5. LWJGL-OpenCL  
+6. LWJGL-STB
   
     
 At the minute it uses  
@@ -29,3 +30,4 @@ At the minute it uses
 2. LWJGL-OpenGL  
 3. LWJGL-GLFW  
 4. LWJGL-OpenAL  
+4. LWJGL-STB
