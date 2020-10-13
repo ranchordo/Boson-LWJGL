@@ -1,6 +1,9 @@
 package main;
 
+import java.awt.Color;
 import java.util.ArrayList;
+
+import util.Util;
 
 public class Cell {
 	public float pole;
@@ -40,6 +43,8 @@ public class Cell {
 	public boolean gpbgen2=false;
 	
 	public boolean doneGenerating=true;
+	
+	public boolean inRender=false;
 	
 
 	public Cell(int pole, int level, char type) {
@@ -83,7 +88,7 @@ public class Cell {
 		}
 		
 		zrel=BosonX.cell_length*zrel_id;
-		rotationSpeed=((float)BosonX.m.randint(1400)-700)/1000f;
+		rotationSpeed=((float)Util.randint(1400)-700)/1000f;
 		geometry=new util.GObject(Integer.toString(enter)+":"+Integer.toString(zrel_id-enter),1);
 	}
 	public float height() { //Get the height of the top of the cell
@@ -125,7 +130,7 @@ public class Cell {
 		geometry.quads=new ArrayList<util.Quad>();
 		geometry.tris=new ArrayList<util.Tri>();
 		geometry.post=new float[] {0,0,0};
-		geometry.rotationalLighting=BosonX.m.cellRotationalLighting;
+		geometry.rotationalLighting=BosonX.active.cellRotationalLighting;
 		float i;
 		float iw_off;
 		float ow_off;
@@ -177,8 +182,8 @@ public class Cell {
 					(width_i+iw_off),(i*platform_id)+i-BosonX.depth(level),zrel+this.length)
 					.autoNormal(0, 0, 1)
 					);
-			geometry.setColor(BosonX.m.P_color.x,BosonX.m.P_color.y,BosonX.m.P_color.z);
-			geometry.lighting=BosonX.m.P_color.w;
+			geometry.setColor(BosonX.active.P_color.x,BosonX.active.P_color.y,BosonX.active.P_color.z);
+			geometry.lighting=BosonX.active.P_color.w;
 
 			geometry.setRotation(0,0,(360.0f/numpoles)*pole);
 			break;
@@ -229,8 +234,8 @@ public class Cell {
 					(width_i+iw_off),(i*platform_id)+i-BosonX.depth(level),zrel+this.length)
 					.autoNormal(0, 0, 1)
 					);
-			geometry.setColor(BosonX.m.P_color.x,BosonX.m.P_color.y,BosonX.m.P_color.z);
-			geometry.lighting=BosonX.m.P_color.w;
+			geometry.setColor(BosonX.active.P_color.x,BosonX.active.P_color.y,BosonX.active.P_color.z);
+			geometry.lighting=BosonX.active.P_color.w;
 
 			geometry.setRotation(0,0,(360.0f/numpoles)*pole);
 			break;
@@ -278,8 +283,8 @@ public class Cell {
 					width_i,-BosonX.depth(level),zrel+this.length)
 					.autoNormal(0, 0, 1)
 					);
-			geometry.setColor(BosonX.m.P_color.x,BosonX.m.P_color.y,BosonX.m.P_color.z);
-			geometry.lighting=BosonX.m.P_color.w;
+			geometry.setColor(BosonX.active.P_color.x,BosonX.active.P_color.y,BosonX.active.P_color.z);
+			geometry.lighting=BosonX.active.P_color.w;
 
 			geometry.setRotation(0,0,(360.0f/numpoles)*pole);
 			break;
@@ -319,8 +324,8 @@ public class Cell {
 					width_i,-BosonX.depth(level),zrel+this.length)
 					.autoNormal(0, 0, 1)
 					);
-			geometry.setColor(BosonX.m.P_color.x,BosonX.m.P_color.y,BosonX.m.P_color.z);
-			geometry.lighting=BosonX.m.P_color.w;
+			geometry.setColor(BosonX.active.P_color.x,BosonX.active.P_color.y,BosonX.active.P_color.z);
+			geometry.lighting=BosonX.active.P_color.w;
 
 			geometry.setRotation(0,0,(360.0f/numpoles)*pole);
 			break;
@@ -472,8 +477,8 @@ public class Cell {
 					width_i,-BosonX.depth(BosonX.B_height),zrel+this.length)
 					.autoNormal(0, 0, 1)
 					);
-			geometry.setColor(BosonX.m.P_color.x,BosonX.m.P_color.y,BosonX.m.P_color.z);
-			geometry.lighting=BosonX.m.P_color.w;
+			geometry.setColor(BosonX.active.P_color.x,BosonX.active.P_color.y,BosonX.active.P_color.z);
+			geometry.lighting=BosonX.active.P_color.w;
 			
 			geometry.post=new float[] {0,-B_yd,0};
 
@@ -524,8 +529,8 @@ public class Cell {
 					width_i,-BosonX.depth(level),zrel+this.length)
 					.autoNormal(0, 0, 1)
 					);
-			geometry.setColor(BosonX.m.P_color.x,BosonX.m.P_color.y,BosonX.m.P_color.z);
-			geometry.lighting=BosonX.m.P_color.w;
+			geometry.setColor(BosonX.active.P_color.x,BosonX.active.P_color.y,BosonX.active.P_color.z);
+			geometry.lighting=BosonX.active.P_color.w;
 
 			geometry.setRotation(0,0,(360.0f/numpoles)*pole);
 			break;
@@ -534,8 +539,8 @@ public class Cell {
 			geometry.loadOBJ("/cannon_outer.obj");
 			geometry.scale(15,15,3);
 			geometry.translate(0, 0, zrel);
-			geometry.setColor(BosonX.m.P_color.x,BosonX.m.P_color.y,BosonX.m.P_color.z);
-			geometry.lighting=BosonX.m.P_color.w;
+			geometry.setColor(BosonX.active.P_color.x,BosonX.active.P_color.y,BosonX.active.P_color.z);
+			geometry.lighting=BosonX.active.P_color.w;
 			util.GObject inner=new util.GObject(1);
 			inner.loadOBJ("/cannon_inner.obj");
 			inner.setColor(1, 1, 1);
@@ -562,7 +567,7 @@ public class Cell {
 	public float onRenderAdd(float a) { //When we are released from pergatory
 		switch(type) {
 		case 'G': //Pass some values down to coordinate platforms
-			ztSpeed=(BosonX.m.randint(1000)/2000.0f)+1.0f;
+			ztSpeed=(Util.randint(1000)/2000.0f)+1.0f;
 			if(a==-1) {
 				a=ztSpeed;
 			} else {
@@ -570,7 +575,7 @@ public class Cell {
 			}
 			//Intentionally no break; here
 		case 'F': //Calculate our speedy stuff
-			if(type=='F') {ztSpeed=BosonX.m.F_speed;}
+			if(type=='F') {ztSpeed=BosonX.active.F_speed;}
 			float timeToDest=(zrel-BosonX.m.r.cam_translation[2])/BosonX.m.speed;
 			length=(BosonX.cell_length/BosonX.m.speed)*ztSpeed+BosonX.cell_length;
 			float zt_init=timeToDest*ztSpeed;
@@ -587,8 +592,8 @@ public class Cell {
 		case 'I':
 		case 'D':
 		case 'P':
-			geometry.setColor(BosonX.m.P_color.x,BosonX.m.P_color.y,BosonX.m.P_color.z);
-			geometry.lighting=BosonX.m.P_color.w;
+			geometry.setColor(BosonX.active.P_color.x,BosonX.active.P_color.y,BosonX.active.P_color.z);
+			geometry.lighting=BosonX.active.P_color.w;
 			break;
 		case 'E':
 			doColors();
@@ -597,12 +602,12 @@ public class Cell {
 			doColors();
 			break;
 		case 'B':
-			geometry.setColor(BosonX.m.P_color.x,BosonX.m.P_color.y,BosonX.m.P_color.z);
-			geometry.lighting=BosonX.m.P_color.w;
+			geometry.setColor(BosonX.active.P_color.x,BosonX.active.P_color.y,BosonX.active.P_color.z);
+			geometry.lighting=BosonX.active.P_color.w;
 			break;
 		case '#':
-			geometry.setColor(BosonX.m.P_color.x,BosonX.m.P_color.y,BosonX.m.P_color.z);
-			geometry.lighting=BosonX.m.P_color.w;
+			geometry.setColor(BosonX.active.P_color.x,BosonX.active.P_color.y,BosonX.active.P_color.z);
+			geometry.lighting=BosonX.active.P_color.w;
 			break;
 		default:
 			System.out.print("Type ");
@@ -633,7 +638,7 @@ public class Cell {
 		case 'E':
 			doColors();
 			if(BosonX.m.r.cam_translation[2]>this.zrel-0.2 && BosonX.m.r.cam_translation[2]<this.zrel+0.4+BosonX.cell_length && (this.pole<0.5 || this.pole>numpoles-0.5) && BosonX.m.r.on) {
-				BosonX.m.energy+=BosonX.m.energy_gain/BosonX.m.frc;
+				BosonX.m.energy+=BosonX.active.energy_gain/BosonX.m.frc;
 				BosonX.m.onE=true;
 			}
 			break;
@@ -645,6 +650,7 @@ public class Cell {
 		case 'F':
 			zrel-=ztSpeed/BosonX.m.frc;
 			initGeo();
+			doColors();
 			break;
 		}
 		if(this.zrel>BosonX.m.gen_cutoff*BosonX.cell_length) {
@@ -662,26 +668,52 @@ public class Cell {
 	
 	public void doColors() { //For oscillating colors
 		switch(type) {
-		case 'E':
-			float fe=(float) ((1.0f/(1+Math.exp(-BosonX.m.E_l*Math.cos(2*(1.0f/BosonX.m.E_c)*Math.PI*((int) (BosonX.m.r.millis()-BosonX.m.start_time)))))  -  1.0f/(1+Math.exp(BosonX.m.E_l)))
-			* (1.0f/(1.0f/(1.0f+Math.exp(-BosonX.m.E_l)) - 1.0f/(1.0f+Math.exp(BosonX.m.E_l)))));
+		case 'F':
+		case 'G':
+			float F_l=1.2f;
+			float F_c=125;
+			float ff=(float) ((1.0f/(1+Math.exp(-F_l*Math.cos(2*(1.0f/F_c)*Math.PI*((int) (BosonX.m.r.millis()-BosonX.m.start_time)))))  -  1.0f/(1+Math.exp(F_l)))
+					* (1.0f/(1.0f/(1.0f+Math.exp(-F_l)) - 1.0f/(1.0f+Math.exp(F_l)))));
 			
-			float re=(BosonX.m.E_color1.x-BosonX.m.E_color0.x)*fe+BosonX.m.E_color0.x;
-			float ge=(BosonX.m.E_color1.y-BosonX.m.E_color0.y)*fe+BosonX.m.E_color0.y;
-			float be=(BosonX.m.E_color1.z-BosonX.m.E_color0.z)*fe+BosonX.m.E_color0.z;
+			float[] hsb=Color.RGBtoHSB(Math.round(BosonX.active.P_color.x*255.0f),Math.round(BosonX.active.P_color.y*255.0f),Math.round(BosonX.active.P_color.z*255.0f),null);
+			//hsb[2]=1;
+			if(hsb[1]>0.4f) {
+				hsb[1]*=0.7f;
+			}
+			hsb[2]=(1.0f+hsb[2])/2.0f;
+			
+			int rgb=Color.HSBtoRGB(hsb[0],hsb[1],hsb[2]);
+			
+			float rcf=((rgb>>16)&0xFF)/255.0f;
+			float gcf=((rgb>>8)&0xFF)/255.0f; 
+			float bcf=(rgb&0xFF)/255.0f;      
+			
+			float rf=(rcf-BosonX.active.P_color.x)*ff+BosonX.active.P_color.x;
+			float gf=(gcf-BosonX.active.P_color.y)*ff+BosonX.active.P_color.y;
+			float bf=(bcf-BosonX.active.P_color.z)*ff+BosonX.active.P_color.z;
+			
+			geometry.setColor(rf,gf,bf);
+			break;
+		case 'E':
+			float fe=(float) ((1.0f/(1+Math.exp(-BosonX.active.E_l*Math.cos(2*(1.0f/BosonX.active.E_c)*Math.PI*((int) (BosonX.m.r.millis()-BosonX.m.start_time)))))  -  1.0f/(1+Math.exp(BosonX.active.E_l)))
+			* (1.0f/(1.0f/(1.0f+Math.exp(-BosonX.active.E_l)) - 1.0f/(1.0f+Math.exp(BosonX.active.E_l)))));
+			
+			float re=(BosonX.active.E_color1.x-BosonX.active.E_color0.x)*fe+BosonX.active.E_color0.x;
+			float ge=(BosonX.active.E_color1.y-BosonX.active.E_color0.y)*fe+BosonX.active.E_color0.y;
+			float be=(BosonX.active.E_color1.z-BosonX.active.E_color0.z)*fe+BosonX.active.E_color0.z;
 			
 			geometry.setColor(re, ge, be);
-			geometry.lighting=BosonX.m.E_color0.w;
+			geometry.lighting=BosonX.active.E_color0.w;
 			break;
 		case 'C':
-			float fc=(float) ((1.0f/(1+Math.exp(-BosonX.m.C_l*Math.cos(2*(1.0f/BosonX.m.C_c)*Math.PI*((int) (BosonX.m.r.millis()-BosonX.m.start_time)))))  -  1.0f/(1+Math.exp(BosonX.m.C_l)))
-			* (1.0f/(1.0f/(1.0f+Math.exp(-BosonX.m.C_l)) - 1.0f/(1.0f+Math.exp(BosonX.m.C_l)))));
+			float fc=(float) ((1.0f/(1+Math.exp(-BosonX.active.C_l*Math.cos(2*(1.0f/BosonX.active.C_c)*Math.PI*((int) (BosonX.m.r.millis()-BosonX.m.start_time)))))  -  1.0f/(1+Math.exp(BosonX.active.C_l)))
+			* (1.0f/(1.0f/(1.0f+Math.exp(-BosonX.active.C_l)) - 1.0f/(1.0f+Math.exp(BosonX.active.C_l)))));
 			
-			float rc=(BosonX.m.C_color1.x-BosonX.m.C_color0.x)*fc+BosonX.m.C_color0.x;
-			float gc=(BosonX.m.C_color1.y-BosonX.m.C_color0.y)*fc+BosonX.m.C_color0.y;
-			float bc=(BosonX.m.C_color1.z-BosonX.m.C_color0.z)*fc+BosonX.m.C_color0.z;
+			float rc=(BosonX.active.C_color1.x-BosonX.active.C_color0.x)*fc+BosonX.active.C_color0.x;
+			float gc=(BosonX.active.C_color1.y-BosonX.active.C_color0.y)*fc+BosonX.active.C_color0.y;
+			float bc=(BosonX.active.C_color1.z-BosonX.active.C_color0.z)*fc+BosonX.active.C_color0.z;
 			geometry.setColor(rc, gc, bc);
-			geometry.lighting=BosonX.m.C_color0.w;
+			geometry.lighting=BosonX.active.C_color0.w;
 			break;
 		}
 	}
@@ -720,14 +752,14 @@ public class Cell {
 		case 6:
 			gpfgen1=level;
 			float rze=0;
-			if(platform_id==0) {rze=BosonX.m.randint(180)+180;}
+			if(platform_id==0) {rze=Util.randint(180)+180;}
 			else {rze=a[0];}
 			rz=rze;
 			if(type!='B') {level-=20;}
 			B_yd+=BosonX.depth(-20)-BosonX.depth(0);
 			float r=-1;
 			if(!rotationDefined) {
-				if(platform_id==0) {r=-1-BosonX.m.randint(1000)/1000.0f;}
+				if(platform_id==0) {r=-1-Util.randint(1000)/1000.0f;}
 				else {r=a[1];}
 				rotate(r);
 				initGeo();
@@ -740,14 +772,14 @@ public class Cell {
 		case 7:
 			gpfgen1=level;
 			rze=0;
-			if(platform_id==0) {rze=BosonX.m.randint(180)+180;}
+			if(platform_id==0) {rze=Util.randint(180)+180;}
 			else {rze=a[0];}
 			rz=rze;
 			if(type!='B') {level-=20;}
 			B_yd+=BosonX.depth(-20)-BosonX.depth(0);
 			r=-1;
 			if(!rotationDefined) {
-				if(platform_id==0) {r=-1-BosonX.m.randint(1000)/1000.0f;}
+				if(platform_id==0) {r=-1-Util.randint(1000)/1000.0f;}
 				else {r=a[1];}
 				rotate(r);
 				initGeo();
@@ -824,9 +856,12 @@ public class Cell {
 		ArrayList<Cell> ret=new ArrayList<Cell>();
 		boolean go=true;
 		int search=1;
+		@SuppressWarnings("unchecked")
+		ArrayList<Cell> temp_holding=(ArrayList<Cell>) BosonX.m.tergen.holding.clone();
 		while(go) {
 			go=false;
-			for(Cell c : BosonX.m.holding) {
+			for(int i=0;i<temp_holding.size();i++) {
+				Cell c=temp_holding.get(i);
 				if(c.pole==this.pole && c.level==this.level && c.zrel_id==this.zrel_id+search && c.type==this.type) {
 					go=true;
 					ret.add(c);
@@ -845,7 +880,7 @@ public class Cell {
 		return t;
 	}
 	public boolean isAhead() { //Is there a cell of the same type directly ahead of us
-		for(Cell c : BosonX.m.holding) {
+		for(Cell c : BosonX.m.tergen.holding) {
 			if(c.pole==this.pole && c.level==this.level && c.zrel_id==this.zrel_id+1 && c.type==this.type) {
 				return true;
 			}

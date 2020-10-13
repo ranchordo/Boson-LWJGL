@@ -28,6 +28,8 @@ public class Patch implements Comparable<Patch> {
 	public float level;
 	
 	public boolean center=false;
+	public boolean right=false;
+	public boolean bottom=false;
 	@Override
 	public int compareTo(Patch a) {
 		return ((Float) this.level).compareTo((Float) a.level);
@@ -37,7 +39,11 @@ public class Patch implements Comparable<Patch> {
 		glPushMatrix();
 		glEnable(GL_TEXTURE_2D);
 		if(!center) {
-			glTranslatef(x+(w/2.0f),y+(h/2.0f),0);
+			if(!right && !bottom) {glTranslatef(x+(w/2.0f),y+(h/2.0f),0);}
+			if(!right && bottom)  {glTranslatef(x+(w/2.0f),y+(h/2.0f)-h,0);}
+			if(right && !bottom)  {glTranslatef(x+(w/2.0f)-w,y+(h/2.0f),0);}
+			if(right && bottom)   {glTranslatef(x+(w/2.0f)-w,y+(h/2.0f)-h,0);}
+			//glTranslatef(x+(w/2.0f),y+(h/2.0f),0);
 		} else {
 			glTranslatef(x,y,0);
 		}

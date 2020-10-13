@@ -11,7 +11,7 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 
 import org.lwjgl.BufferUtils;
-import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 
 import audio.Audio;
@@ -22,11 +22,19 @@ import util.MultiQuad;
 import util.PrefetchedImages;
 import util.Shader;
 import util.Texture;
+import static util.MultiQuad.*;
+import util.Util;
 
 public class Renderer {
 	public ArrayList<Cell> celllist=new ArrayList<Cell>(); //Render routine
 	public float[] cam_translation= {0.0f,0.0f,0.0f};
 	util.Rotation cam_rotation=new util.Rotation(180,0,0);
+	public int windowedW=864;
+	public int windowedH=486;
+	public int windowedX=200;
+	public int windowedY=200;
+	public int fullW=0;
+	public int fullH=0;
 	public int winW=1920;
 	public int winH=1080;
 	
@@ -81,42 +89,76 @@ public class Renderer {
 			return a;
 		}
 	}
-	public long initGL() { //Initialize our OpenGL bindings (Camera...)
+	public void getFullscDimensions() {
+		GLFWVidMode d=glfwGetVideoMode(glfwGetPrimaryMonitor());
+		this.fullW=d.width();
+		this.fullH=d.height();
+		this.targ_fr=d.refreshRate();
+	}
+	public long doWindow(boolean fullscreen, long prevwin) {
 		if(!glfwInit()) {
 			System.err.println("GLFWInit Error.");
 			System.exit(1);
 		}
 		System.out.println("InitGL: Getting specifications of your monitor:");
-		GLFWVidMode d=glfwGetVideoMode(glfwGetPrimaryMonitor());
-		winW=d.width();
-		winH=d.height();
+		getFullscDimensions();
+		winW=fullW;
+		winH=fullH;
+		BosonX.m.aspectRatio=(float)winW/(float)winH;
+		BosonX.m.hrc=winH/1080.0f;
+		BosonX.m.wrc=winW/1920.0f;
+		BosonX.m.mrc=Math.min(BosonX.m.hrc,BosonX.m.wrc);
 		System.out.println("Resolution: "+winW+"x"+winH);
-		targ_fr=d.refreshRate();
 		System.out.println("Refresh rate / target frame rate: "+targ_fr+"Hz");
-		long win=glfwCreateWindow(winW,winH,"Boson-LWJGL",glfwGetPrimaryMonitor(),0);
+		long win;
+		if(fullscreen) {
+			win=glfwCreateWindow(winW,winH,"Boson-LWJGL",glfwGetPrimaryMonitor(),prevwin);
+		} else {
+			win=glfwCreateWindow(windowedW,windowedH,"Boson-LWJGL",0,prevwin);
+			winW=windowedW;
+			winH=windowedH;
+		}
 		glfwShowWindow(win);
 		glfwMakeContextCurrent(win);
 		GL.createCapabilities();
-		if(winW/(float)winH!=16.0f/9.0f) {
-			//Aspect ratio correction
-			if(winW/(float)winH<16.0f/9.0f) {
-				//H is too big
-				int targH=(int) (winW*(9.0f/16.0f));
-				System.out.println("New viewport resolution: "+winW+"x"+targH);
-				int vframe=(winH-targH)/2;
-				winH=targH;
-				glViewport(0,vframe,winW,winH);
-			} else {
-				//W is too big
-				int targW=(int) (winH*(16.0f/9.0f));
-				System.out.println("New viewport resolution: "+targW+"x"+winH);
-				int hframe=(winW-targW)/2;
-				winW=targW;
-				glViewport(hframe,0,winW,winH);
-			}
-			System.out.println("Aspect ratio correction applied");
-			
-		}
+		return win;
+	}
+	GLFWWindowSizeCallback onResize=new GLFWWindowSizeCallback() {
+    	public void invoke(long win, int w,  int h) {
+    		if(w==fullW && h==fullH) {
+    			glfwSetWindowMonitor(win,glfwGetPrimaryMonitor(),0,0,w,h,targ_fr);
+    			fullscreen=true;
+    		} else {
+    			glfwSetWindowMonitor(win,0,windowedX,windowedY,w,h,targ_fr);
+    			windowedW=w;
+    			windowedH=h;
+    			fullscreen=false;
+    		}
+			winW=w;
+			winH=h;
+			BosonX.m.aspectRatio=(float)winW/(float)winH;
+			BosonX.m.hrc=winH/1080.0f;
+			BosonX.m.wrc=winW/1920.0f;
+			BosonX.m.mrc=Math.min(BosonX.m.hrc,BosonX.m.wrc);
+			glViewport(0,0,winW,winH);
+			fov_encap(fov);
+			gui.calcConsts();
+			Texture.clearCache();
+    	}
+    };
+    GLFWWindowPosCallback onMove=new GLFWWindowPosCallback() {
+    	public void invoke(long win, int x, int y) {
+    		windowedX=x;
+			windowedY=y;
+    		if(fullscreen) {
+    			glfwSetWindowMonitor(win,glfwGetPrimaryMonitor(),x,y,winW,winH,targ_fr);
+    		} else {
+    			glfwSetWindowMonitor(win,0,x,y,winW,winH,targ_fr);
+    		}
+    	}
+    };
+	public long initGL(boolean fullscreen) { //Initialize our OpenGL bindings (Camera...)
+		long win=doWindow(fullscreen,0);
 		//glClearColor(1.0f,0.0f,0.0f,0.0f);
 		
 		hudtex=new util.Texture();
@@ -129,8 +171,8 @@ public class Renderer {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         
         //glLightModelfv(GL_LIGHT_MODEL_AMBIENT,asFloatBuffer(new float[] {0.1f,0.1f,0.1f,1f}));
-        glLightfv(GL_LIGHT1, GL_AMBIENT, BosonX.asFloatBuffer(lightAmbient));
-        glLightfv(GL_LIGHT1, GL_DIFFUSE, BosonX.asFloatBuffer(lightDiffuse));
+        glLightfv(GL_LIGHT1, GL_AMBIENT, Util.asFloatBuffer(lightAmbient));
+        glLightfv(GL_LIGHT1, GL_DIFFUSE, Util.asFloatBuffer(lightDiffuse));
         
         glEnable(GL_COLOR_MATERIAL);
         glColorMaterial(GL_FRONT_AND_BACK, GL_POSITION);
@@ -149,6 +191,7 @@ public class Renderer {
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
         
         glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        glfwSetWindowSizeCallback(win,onResize);
         System.out.println("InitGL: Completed successfully. Window "+win+" created.");
         return win;
 	}
@@ -158,7 +201,7 @@ public class Renderer {
 		return new Source();
 	}
 	private void renderLights() { //Lights...
-		glLightfv(GL_LIGHT1, GL_POSITION, BosonX.asFloatBuffer(lightPosition));
+		glLightfv(GL_LIGHT1, GL_POSITION, Util.asFloatBuffer(lightPosition));
 	}
 	private void renderAll(int a) {//Action...
 		for(Cell cell : celllist) {
@@ -207,18 +250,18 @@ public class Renderer {
 	
 	private void speedup() { //Process our speedup
 		float frac=BosonX.m.energy/100.0f;
-		BosonX.m.speed=frac*(BosonX.m.speed1-BosonX.m.speed0)+BosonX.m.speed0;
+		BosonX.m.speed=frac*(BosonX.active.speed1-BosonX.active.speed0)+BosonX.active.speed0;
 	}
 	
 	private void movement(long win) { //Physics / movement engine!
 		cam_translation[2]+=(BosonX.m.speed/BosonX.m.frc); //Do the moving forward thing
-		int numpoles=celllist.get(0).numpoles;
+		int numpoles=BosonX.m.cp.numpoles;
 		if(glfwGetKey(win,GLFW_KEY_UP)==GL_TRUE || glfwGetKey(win,GLFW_KEY_RIGHT)==GL_TRUE || glfwGetKey(win,GLFW_KEY_LEFT)==GL_TRUE) {
 			if(jc==-1 && on) {jc=0;} //Start our jump counter
 		} else {
 			jc=-1; //Stop the jump counter
 		}
-		if((glfwGetKey(win,GLFW_KEY_RIGHT)==GL_TRUE && !r_rise && on && !l_anim) || (glfwGetKey(win,GLFW_KEY_RIGHT)==GL_TRUE && glfwGetKey(win,GLFW_KEY_UP)==GL_TRUE && !r_rise && !l_anim && !r_anim && BosonX.m.allowMultiJumps)) {
+		if((glfwGetKey(win,GLFW_KEY_RIGHT)==GL_TRUE && !r_rise && on && !l_anim) || (glfwGetKey(win,GLFW_KEY_RIGHT)==GL_TRUE && glfwGetKey(win,GLFW_KEY_UP)==GL_TRUE && !r_rise && !l_anim && !r_anim && BosonX.active.allowMultiJumps)) {
 			//Start our animation
 			r_rise=true; //Only rising edges are accepted
 			r_anim=true;
@@ -228,7 +271,7 @@ public class Renderer {
 			}
 		}
 		if(glfwGetKey(win,GLFW_KEY_RIGHT)==GL_FALSE) {r_rise=false;}
-		if((glfwGetKey(win,GLFW_KEY_LEFT)==GL_TRUE && !l_rise && on && !r_anim) || (glfwGetKey(win,GLFW_KEY_LEFT)==GL_TRUE && glfwGetKey(win,GLFW_KEY_UP)==GL_TRUE && !l_rise && !l_anim && !r_anim && BosonX.m.allowMultiJumps)) {
+		if((glfwGetKey(win,GLFW_KEY_LEFT)==GL_TRUE && !l_rise && on && !r_anim) || (glfwGetKey(win,GLFW_KEY_LEFT)==GL_TRUE && glfwGetKey(win,GLFW_KEY_UP)==GL_TRUE && !l_rise && !l_anim && !r_anim && BosonX.active.allowMultiJumps)) {
 			//Start our animation
 			l_rise=true; //Only rising edge values are accepted
 			l_anim=true;
@@ -280,17 +323,17 @@ public class Renderer {
 		if(jc>=0) {jc+=1.0f/BosonX.m.frc;} //Jump counter
 		
 		
-		float vy=-BosonX.m.gravity_i; //Initial vertical velocity
-		float t0=BosonX.m.jump_relative+BosonX.m.gravity_i; //Vy as the jump starts
+		float vy=-BosonX.active.gravity_i; //Initial vertical velocity
+		float t0=BosonX.active.jump_relative+BosonX.active.gravity_i; //Vy as the jump starts
 		float vyr=0;
 		if(jc>=0) {
-			vyr=((-t0)/BosonX.m.jump_duration)*jc+t0;
+			vyr=((-t0)/BosonX.active.jump_duration)*jc+t0;
 			if(vyr<0) {vyr=0;}
 			//Jump vertical velocity offset
 		}
 		vy+=vyr; //Apply it
 		if(cam_translation[1]<-BosonX.depth(-1)) {
-			vy=-BosonX.m.gravity_o; //Use outer gravity if we're outside our level
+			vy=-BosonX.active.gravity_o; //Use outer gravity if we're outside our level
 		}
 		on=false;
 		for(Cell c : celllist) {
@@ -334,6 +377,17 @@ public class Renderer {
 	public long millis() { //Wow. So advanced.
 		return System.nanoTime()/1000000;
 	}
+	public int celllistLength() {
+		//What's the highest zrel_id in celllist?
+		int max_zrel_id=0;
+		for(Cell c : celllist) {
+			if(c.zrel_id>max_zrel_id) {
+				max_zrel_id=c.zrel_id;
+			}
+		}
+		int cam_cell=Math.round(cam_translation[2]/BosonX.cell_length);
+		return max_zrel_id-cam_cell;
+	}
 	private static boolean lighting=true;
 	private static boolean rotationalLighting=false;
 	public static void setRL(boolean l) {
@@ -341,6 +395,11 @@ public class Renderer {
 		if(!l) {
 			BosonX.m.r.cellsh.setUniform("rot",0);
 		}
+	}
+	public void resetShaders() {
+		cellsh_l=new Shader("cell");
+		menush=new Shader("menu");
+		cellsh_nl=new Shader("cellnl");
 	}
 	public static void setLighting(boolean l) {
 		if(l) {
@@ -407,6 +466,9 @@ public class Renderer {
 	Shader cellsh_nl=null;
 	Shader menush=null;
 	
+	boolean fullscreen=true;
+	
+	public boolean back=false;
 	private PrefetchedImages p=new PrefetchedImages();
 	public boolean Main() { //I have no idea why I made this return a boolean
 		//Add assets to our PrefetchedImages object so we can get 'em later
@@ -471,7 +533,6 @@ public class Renderer {
 		font_large.mono=false;
 		digits.load_glyphs();
 		digits.mono=false;
-		boolean back=false;
 		s=initAL(); //Music
 		//Generate the buffer IDs:
 		rumble_b=Audio.getOGG("/rumble.ogg");
@@ -498,7 +559,7 @@ public class Renderer {
 		ui.setGain(BosonX.m.volume);
 		s.setGain(BosonX.m.volume);
 		
-		long win=initGL();
+		long win=initGL(true);
 		
 		//Bind our HUD texture
 		hudtex.bind();
@@ -508,8 +569,10 @@ public class Renderer {
 		
 		float pfov=fov; //Previous FOV
 		
+		boolean f11rise=true;
+		boolean f10rise=true;
+		
 		initmenu(); //Do the menu thing
-		BosonX.m.rc=this.winW/1920.0f; //Set the resolution correction factor
 		cellsh_l=new Shader("cell");
 		menush=new Shader("menu");
 		Shader hudsh=new Shader("hud");
@@ -517,10 +580,47 @@ public class Renderer {
 		Renderer.setLighting(true);
 		System.out.println();
 		System.out.println("Initialization complete, ready to go!");
-		while (!glfwWindowShouldClose(win)) { //Tick, Tock, millis() clock, but the window don't stop, no... (Well, at least not until glfwTerminate is called)
+		
+		while (!glfwWindowShouldClose(win)) { //LOOOOP!
 			//--------MAINLOOP---------//
+			//I'm sorry, the main loop is kind of an undocumented mess.
 			if(glfwGetKey(win,GLFW_KEY_P)==GL_TRUE) {
 				glfwSetWindowShouldClose(win,true); //PANIC
+			}
+			if(glfwGetKey(win,GLFW_KEY_F10)==GL_TRUE) {
+				if(f10rise) {
+					f10rise=false;
+					System.out.println("Refreshing audio...");
+					Audio.cleanUp();
+					Audio.init();
+					Audio.initListener();
+				}
+			} else {f10rise=true;}
+			if(glfwGetKey(win,GLFW_KEY_F11)==GL_TRUE) {
+				if(f11rise) {
+					fullscreen=!fullscreen;
+					if(fullscreen) {
+				        glfwSetWindowPosCallback(win,null);
+					}
+					glfwSetWindowMonitor(win,fullscreen ? glfwGetPrimaryMonitor() : 0,windowedX,windowedY,fullscreen?fullW:windowedW,fullscreen?fullH:windowedH,targ_fr);
+					winW=fullscreen?fullW:windowedW;
+					winH=fullscreen?fullH:windowedH;
+					BosonX.m.aspectRatio=(float)winW/(float)winH;
+					BosonX.m.hrc=winH/1080.0f;
+					BosonX.m.wrc=winW/1920.0f;
+					BosonX.m.mrc=Math.min(BosonX.m.hrc,BosonX.m.wrc);
+					glViewport(0,0,winW,winH);
+					fov_encap(fov);
+					initmenu();
+					Texture.clearCache();
+					f11rise=false;
+					if(!fullscreen) {
+				        glfwSetWindowPosCallback(win,onMove);
+					}
+				}
+				
+			} else {
+				f11rise=true;
 			}
 			glfwPollEvents(); //Poll the events (I'm sure you could not figure that out from the name of this function)
 			if(menu) { //Mess with our background colors
@@ -538,18 +638,18 @@ public class Renderer {
 				} else if(menustage==2) {
 					glClearColor(1,1,1,1);
 				} else if(menustage==-1) {
-					if(BosonX.m.background.HSBcycle==0) {
-						glClearColor(BosonX.m.background.bgcolor.x,BosonX.m.background.bgcolor.y,BosonX.m.background.bgcolor.z,BosonX.m.background.bgcolor.w);
+					if(BosonX.active.background.HSBcycle==0) {
+						glClearColor(BosonX.active.background.bgcolor.x,BosonX.active.background.bgcolor.y,BosonX.active.background.bgcolor.z,BosonX.active.background.bgcolor.w);
 					} else {
-						util.Vector4f f=BosonX.m.background.bgcolorspace();
+						util.Vector4f f=BosonX.active.background.bgcolorspace();
 						glClearColor(f.x,f.y,f.z,f.w);
 					}
 				}
 			} else {
-				if(BosonX.m.background.HSBcycle==0) {
-					glClearColor(BosonX.m.background.bgcolor.x,BosonX.m.background.bgcolor.y,BosonX.m.background.bgcolor.z,BosonX.m.background.bgcolor.w);
+				if(BosonX.active.background.HSBcycle==0) {
+					glClearColor(BosonX.active.background.bgcolor.x,BosonX.active.background.bgcolor.y,BosonX.active.background.bgcolor.z,BosonX.active.background.bgcolor.w);
 				} else {
-					util.Vector4f f=BosonX.m.background.bgcolorspace();
+					util.Vector4f f=BosonX.active.background.bgcolorspace();
 					glClearColor(f.x,f.y,f.z,f.w);
 				}
 			}
@@ -557,18 +657,19 @@ public class Renderer {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 			long t1=millis(); //Frame start time
 			if(!back && !menu) { //It's level time!
+				BosonX.m.tergen.tick();
 				//GL STUFF
 				if(pfov!=fov) {fov_encap(fov);} //If our FOV changed, change it
 				pfov=fov;
 				speedup(); //Handle our speedup
-				BosonX.m.handleRenderAdd(); //Remove some cells from pergatory
 				boolean p_onE=BosonX.m.onE; //Previous onE
 				BosonX.m.onE=false; //No, onE, no!
+				BosonX.m.tergen.handleRenderAdd();
 				movement(win); //PHYSICS TIME
 				handleAllEffects(); //Do the effects stuff (this also sets onE)
 				float chargeDecay=15; //How many frames to decay our charging sound
 				if(BosonX.m.onE!=p_onE) { //If our current onE is not our prev one
-					if(BosonX.m.onE) { //If we are onE now, but not onE lsat frame
+					if(BosonX.m.onE) { //If we are onE now, but not onE last frame
 						charge.play(charge_b); //Start the charging!
 						cc=-1; //Stop the clock!
 					} else {
@@ -589,19 +690,18 @@ public class Renderer {
 				if(cc!=-1) {cc+=1.0f/BosonX.m.frc;} //Handle our clock increase and handle framerate correction
 				float f=(float) ((Math.sqrt(BosonX.m.energy/14.3f))/(10.0f/1.4f))+1;
 				charge.setPitch(f); //Make the pitch increase with energy
-				handleRemoving(); //Remove all the cells that we passed.
-				BosonX.m.handle_generation(); //Keep the pergatory stocked
+				handleRemoving(); //Remove all the cells that we passed. I'm not really sure what's supposed to come after heaven, but all cells go there.
 				if(handleDeath(win)) {back=true;} //If we die, go back to the menu
 				glPushMatrix(); 
 				cam_rotation.renderRotation(); //Render cam transforms
 				glTranslatef(-cam_translation[0],-cam_translation[1],-cam_translation[2]);
-				BosonX.m.background.generate(); //Generate the background
+				BosonX.active.background.generate(); //Generate the background
 				cellsh.bind();
 				Renderer.setRL(false);
-				BosonX.m.background.render(); //Render our background
+				BosonX.active.background.render(); //Render our background
 				renderLights(); //Lights....
 				int a=1;
-				if(BosonX.m.background.pt) { //I think pt stands for "platforms transparent"?
+				if(BosonX.active.background.pt) { //I think pt stands for "platforms transparent"?
 					//Do some stencil stuff to change the stencil buffer where our platforms are
 					a=0;
 					glStencilFunc(GL_ALWAYS,1,0xFF);
@@ -610,21 +710,21 @@ public class Renderer {
 				}
 				renderAll(a); //Render all with an alpha multiplier of 1 (unless pt, in that case 0, i.e. platforms are transparent)
 				Renderer.setRL(false);
-				if(BosonX.m.background.separateE) { //Why is separateE part of BosonX.m.background? I have _no_ idea.
+				if(BosonX.active.background.separateE) { //Why is separateE part of BosonX.active.background? I have _no_ idea.
 					renderAll(1,'E'); //Render all of our E's again.
 				}
 				
 				glPopMatrix(); //Pop our matrix to before the cam transforms
-				if(BosonX.m.background.pt) { //Render our masking quad and enable the stencil test
+				if(BosonX.active.background.pt) { //Render our masking quad and enable the stencil test
 					glStencilMask(0x00);
 					glStencilFunc(GL_GREATER,1,0xFF);
 					glDisable(GL_DEPTH_TEST);
 					Renderer.setLighting(false);
 					glBegin(GL_QUADS);
-						if(BosonX.m.background.maskHSBcycle==0) {
-							glColor4f(BosonX.m.background.maskColor.x,BosonX.m.background.maskColor.y,BosonX.m.background.maskColor.z,1);
+						if(BosonX.active.background.maskHSBcycle==0) {
+							glColor4f(BosonX.active.background.maskColor.x,BosonX.active.background.maskColor.y,BosonX.active.background.maskColor.z,1);
 						} else {
-							util.Vector4f mask=BosonX.m.background.maskcolorspace();
+							util.Vector4f mask=BosonX.active.background.maskcolorspace();
 							glColor4f(mask.x,mask.y,mask.z,1);
 						}
 						glNormal3f(0,0,1);
@@ -645,7 +745,7 @@ public class Renderer {
 				float hudH=121.5f*h;
 				lc+=1.0f/BosonX.m.frc;
 				Graphics g=hudtex.initBI((int)hudW,(int)hudH);
-				font2.drawString("ENERGY: ",(int) (20*w),(int) (10*w),(int) (25*w),g);
+				font2.drawString("ENERGY: ",(int) (20*w),(int) (10*h),(int) (25*h),g);
 				font2.drawString(dbg,(int) (10.0f*w),(int)(87.0f*h),(int)(13.0f*h),g);
 				font2.drawString(Integer.toString(Math.round(BosonX.m.fr))+" FPS",(int) (300.0f*w),(int)(87.0f*h),(int)(13.0f*h),g);
 				//0.56,1.3,1.4
@@ -658,25 +758,25 @@ public class Renderer {
 				float ge=(fe*(255-230))+230;
 				g.setColor(new Color(143,255,255));
 				if(BosonX.m.energy>BosonX.m.scores.peaks.get(BosonX.m.cp.level)) {
-					font2.drawString("NEW PEAK",(int)(250*w),(int) (10*w),(int)(25*w),new Color((int)r,(int) ge,255),g);
+					font2.drawString("NEW PEAK",(int)(250*w),(int) (10*h),(int)(25*h),new Color((int)r,(int) ge,255),g);
 				}
 				if(BosonX.m.energy<100.0f) {
-					g.fillRect(0,(int) (35*w),(int) ((BosonX.m.energy/100.0f)*hudW),(int) (5*w));
+					g.fillRect(0,(int) (35*h),(int) ((BosonX.m.energy/100.0f)*hudW),(int) (5*h));
 				} else {
 					g.setColor(new Color(255,40,40));
-					g.fillRect(0,(int) (100.5f*w),(int) hudW,(int) (21*w));
-					font2.drawString("READY FOR COLLISION",(int)(20*w),(int) (100.5f*w),(int) (25*w),new Color((int)r,(int) ge,255),g);
+					g.fillRect(0,(int) (100.5f*h),(int) hudW,(int) (21*h));
+					font2.drawString("READY FOR COLLISION",(int)(20*w),(int) (100.5f*h),(int) (25*h),new Color((int)r,(int) ge,255),g);
 					g.setColor(new Color((int)r,(int) ge,255));
-					g.fillRect(0,(int) (35*w),(int) (hudW),(int) (5*w));
+					g.fillRect(0,(int) (35*h),(int) (hudW),(int) (5*h));
 				}
-				digits.drawString(Float.toString((float) Math.round(BosonX.m.energy*100)/100f)+"%", (int) (20*w), (int) (40*h), (int) (55*w), g);
+				digits.drawString(Float.toString((float) Math.round(BosonX.m.energy*100)/100f)+"%", (int) (20*w), (int) (40*h), (int) (55*h), g);
 				//digits.drawString("HELLO", 20, 60, 45, g);
 				hudtex.applyBI();
 				g.dispose();
 				glEnable(GL_TEXTURE_2D);
 				glDisable(GL_DEPTH_TEST);
-				float xmax=(float) (2*(16.0/9.0)*Math.tan(Math.toRadians(fov/2.0f)));
-				float xmin=(float) (1.6*Math.tan(Math.toRadians(fov/2.0f)));
+				float xmax=(float) (2*(BosonX.m.aspectRatio)*Math.tan(Math.toRadians(fov/2.0f)));
+				float xmin=(float) (0.9*(BosonX.m.aspectRatio)*Math.tan(Math.toRadians(fov/2.0f)));
 				float ymax=(float) (2*Math.tan(Math.toRadians(fov/2.0f)));
 				float ymin=(float) (1.55*Math.tan(Math.toRadians(fov/2.0f)));
 				glStencilFunc(GL_ALWAYS,1,0xFF);
@@ -736,14 +836,14 @@ public class Renderer {
 			if(back) { //Clean up after ourselves
 				back=false;
 				menu=true;
-				BosonX.m.beenInitialized=false;
-				BosonX.m.holding=new ArrayList<Cell>();
+				BosonX.active.beenInitialized=false;
+				BosonX.m.tergen.holding=new ArrayList<Cell>();
 				cam_translation=new float[] {0,0,0};
 				cam_rotation=new util.Rotation(180,0,0);
 				celllist=new ArrayList<Cell>();
 				BosonX.m.enter=0;
-				BosonX.m.background.particles=new ArrayList<Particle>();
-				BosonX.m.background.populate();
+				BosonX.active.background.particles=new ArrayList<Particle>();
+				BosonX.active.background.populate();
 				//Cleanup movement engine
 				jc=-1;
 				lc=0;
@@ -765,7 +865,7 @@ public class Renderer {
 				pc=-1;
 				initmenu();
 				menustage=-1;
-				BosonX.m.background.flushParticles();
+				BosonX.active.background.flushParticles();
 				BosonX.m.scores.scores.get(BosonX.m.cp.level).add(BosonX.m.energy);
 				BosonX.m.scores.applyLimit();
 				BosonX.m.scores.doPeak();
@@ -785,13 +885,15 @@ public class Renderer {
 					Thread.sleep(1);
 				} catch (InterruptedException e) {}
 			}
+			//Bunch o' stuff about memory
 			dbg=""; //Debug text!
 			dbg+=String.format("%3.2f",((float)(Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/(float)Runtime.getRuntime().totalMemory())*100.0f);
 			dbg+="% of ";
 			dbg+=Runtime.getRuntime().totalMemory()/1048576.0f;
 			dbg+="M";
-			//Bunch o' stuff about memory
-			BosonX.m.fr=1000.0f/(millis()-t1); //Calculate framerate and framerate compensation
+			//Bunch o' stuff about framerate
+			BosonX.m.fp=(millis()-t1);
+			BosonX.m.fr=1000.0f/BosonX.m.fp; //Calculate framerate and framerate compensation
 			BosonX.m.frc=BosonX.m.fr/60.0f;
 			if(BosonX.m.frc<0.33f) {
 				BosonX.m.frc=0.33f;
@@ -857,12 +959,11 @@ public class Renderer {
 		
 		if(!menu) { //If we got the signal to start
 			primec=0; //Start the "priming detector" clock
-			BosonX.m.allowMultiJumps=false;
 			primes=millis();
 			menu=true;
 		}
-		if(primec!=-1 && !BosonX.m.beenInitialized) {
-			BosonX.m.loadSpec(BosonX.m.cp.level);
+		if(primec!=-1 && !BosonX.active.beenInitialized) {
+			Spec.loadSpec(BosonX.m.cp.level);
 		}
 		if(primec>=2000 || (!prime&& primec!=-1)) { //Start up our level
 			ui.play(uiintro);
@@ -872,7 +973,7 @@ public class Renderer {
 			BosonX.m.pole=0;
 			BosonX.m.energy=0;
 			BosonX.m.start_time=this.millis();
-			BosonX.m.addAdapter(16);
+			BosonX.m.tergen.addAdapter(16);
 			prime=true;
 			//BosonX.m.addPattern(16,0);
 			music=Audio.getOGG("/stage"+Integer.toString((BosonX.m.cp.level-1)%6+1)+"a.ogg");
@@ -937,7 +1038,7 @@ public class Renderer {
 	}
 	public void renderQuad(util.Quad q) { //Render a quadrangle!
 		glBegin(GL_QUADS);
-			if(!BosonX.m.background.pt) {
+			if(!BosonX.active.background.pt) {
 				glColor4f(q.color[0],q.color[1],q.color[2],q.color[3]);
 			} else {
 				glColor4f(q.color[0],q.color[1],q.color[2],0);
@@ -1099,27 +1200,27 @@ public class Renderer {
 			arr_rise=false;
 		}
 		//Create some flickery alphas
-		float dap=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.01f;
+		float dap=((Util.randint(1000)/500.0f)-0.5f)*0.01f;
 		while(apval+dap<0.9f || apval+dap>1.0f) {
-			dap=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.2f;
+			dap=((Util.randint(1000)/500.0f)-0.5f)*0.2f;
 		}
 		apval+=dap;
 		
-		float dap_l1=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.01f;
+		float dap_l1=((Util.randint(1000)/500.0f)-0.5f)*0.01f;
 		while(apval_light1+dap_l1<0.5f || apval_light1+dap_l1>1.0f) {
-			dap_l1=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.5f;
+			dap_l1=((Util.randint(1000)/500.0f)-0.5f)*0.5f;
 		}
 		apval_light1+=dap_l1;
 		
-		float dap_l2=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.01f;
+		float dap_l2=((Util.randint(1000)/500.0f)-0.5f)*0.01f;
 		while(apval_light2+dap_l2<0.5f || apval_light2+dap_l2>1.0f) {
-			dap_l2=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.5f;
+			dap_l2=((Util.randint(1000)/500.0f)-0.5f)*0.5f;
 		}
 		apval_light2+=dap_l2;
 		
-		float dap_l3=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.01f;
+		float dap_l3=((Util.randint(1000)/500.0f)-0.5f)*0.01f;
 		while(apval_light3+dap_l3<0.5f || apval_light3+dap_l3>1.0f) {
-			dap_l3=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.5f;
+			dap_l3=((Util.randint(1000)/500.0f)-0.5f)*0.5f;
 		}
 		apval_light3+=dap_l3;
 		
@@ -1149,19 +1250,19 @@ public class Renderer {
 		//Do the multiquad drawing stuff
 		BufferedImage beam=Texture.realpha(p.get("beam"+bgset),apval, false);
 		gui.drawImage(beam,0.5f,0.2f,1,(float) beam.getHeight()/(float)winH,"BEAM",0,true);
-		gui.drawImage(Texture.recolor(new BufferedImage(p.get("title_bg").getWidth(),p.get("title_bg").getHeight(),BufferedImage.TYPE_3BYTE_BGR),new Color(fb.get(0),fb.get(1),fb.get(2)), true),0.5f,0.2f,1.2f,"BG_blank",0,true);
-		gui.drawImage(Texture.realpha(p.get("bg"+bgset),apval, false),0.5f,0.2f,1.2f,"BG",0, true);
-		gui.drawImage(Texture.realpha(p.get("l1_bg"+bgset),apval_light1, false),0.5f,0.2f,1.2f,"light1",((mtime/50000.0f)*360.0f)%360.0f, true);
-		gui.drawImage(Texture.realpha(p.get("l2_bg"+bgset),apval_light3, false),0.5f,0.2f,0.6f,"light2",-(((mtime/50000.0f)*360.0f)%360.0f), true);
-		gui.drawImage(Texture.realpha(p.get("l3_bg"+bgset),apval_light2, false),0.5f,0.2f,0.8f,"light3",((mtime/55000.0f)*360.0f)%360.0f, true);
+		gui.drawImage(Texture.recolor(new BufferedImage(p.get("title_bg").getWidth(),p.get("title_bg").getHeight(),BufferedImage.TYPE_3BYTE_BGR),new Color(fb.get(0),fb.get(1),fb.get(2)), true),0.5f,0.2f,1.2f,"BG_blank",0,true,MINIMUM);
+		gui.drawImage(Texture.realpha(p.get("bg"+bgset),apval, false),0.5f,0.2f,1.2f,"BG",0, true,MINIMUM);
+		gui.drawImage(Texture.realpha(p.get("l1_bg"+bgset),apval_light1, false),0.5f,0.2f,1.2f,"light1",((mtime/50000.0f)*360.0f)%360.0f, true,MINIMUM);
+		gui.drawImage(Texture.realpha(p.get("l2_bg"+bgset),apval_light3, false),0.5f,0.2f,0.6f,"light2",-(((mtime/50000.0f)*360.0f)%360.0f), true,MINIMUM);
+		gui.drawImage(Texture.realpha(p.get("l3_bg"+bgset),apval_light2, false),0.5f,0.2f,0.8f,"light3",((mtime/55000.0f)*360.0f)%360.0f, true,MINIMUM);
 		
 		
-		gui.drawImage(Texture.recolor(p.get("ss_button"),act[0] ? new Color(141,208,217) : new Color(100,100,100), true),0.2f,0.6f,1.7f,"ss_button1",0,true);
-		gui.drawImage(p.get("facility1"),0.2f,0.6f,0.8f,"ss_logo1",0,true);
-		gui.drawImage(Texture.recolor(p.get("ss_button"),act[1] ? new Color(217,141,141) : new Color(100,100,100), true),0.5f,0.6f,1.7f,"ss_button2",0,true);
-		gui.drawImage(p.get("facility2"),0.5f,0.6f,0.8f,"ss_logo2",0,true);
-		gui.drawImage(Texture.recolor(p.get("ss_button"),act[2] ? new Color(237,235,121) : new Color(100,100,100), true),0.8f,0.6f,1.7f,"ss_button3",0,true);
-		gui.drawImage(p.get("facility3"),0.8f,0.6f,0.8f,"ss_logo3",0,true);
+		gui.drawImage(Texture.recolor(p.get("ss_button"),act[0] ? new Color(141,208,217) : new Color(100,100,100), true),0.2f,0.6f,1.7f,"ss_button1",0,true,MINIMUM);
+		gui.drawImage(p.get("facility1"),0.2f,0.6f,0.8f,"ss_logo1",0,true,MINIMUM);
+		gui.drawImage(Texture.recolor(p.get("ss_button"),act[1] ? new Color(217,141,141) : new Color(100,100,100), true),0.5f,0.6f,1.7f,"ss_button2",0,true,MINIMUM);
+		gui.drawImage(p.get("facility2"),0.5f,0.6f,0.8f,"ss_logo2",0,true,MINIMUM);
+		gui.drawImage(Texture.recolor(p.get("ss_button"),act[2] ? new Color(237,235,121) : new Color(100,100,100), true),0.8f,0.6f,1.7f,"ss_button3",0,true,MINIMUM);
+		gui.drawImage(p.get("facility3"),0.8f,0.6f,0.8f,"ss_logo3",0,true,MINIMUM);
 		
 		
 		BufferedImage selector=new BufferedImage(p.get("ss_button").getWidth(),p.get("ss_button").getHeight(),BufferedImage.TYPE_4BYTE_ABGR);
@@ -1169,7 +1270,7 @@ public class Renderer {
 		sg.setColor(new Color(255,141,141));
 		((Graphics2D) sg).setStroke(new BasicStroke(4));
 		sg.drawRect(0,0,selector.getWidth(),selector.getHeight());
-		gui.drawImage(selector,rect_location,0.6f,1.8f,"selector",0,true);
+		gui.drawImage(selector,rect_location,0.6f,1.8f,"selector",0,true,MINIMUM);
 		sg.dispose();
 		
 		gui.render();
@@ -1256,27 +1357,27 @@ public class Renderer {
 		} else {
 			arr_rise=false;
 		}
-		float dap=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.01f;
+		float dap=((Util.randint(1000)/500.0f)-0.5f)*0.01f;
 		while(apval+dap<0.9f || apval+dap>1.0f) {
-			dap=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.2f;
+			dap=((Util.randint(1000)/500.0f)-0.5f)*0.2f;
 		}
 		apval+=dap;
 		
-		float dap_l1=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.01f;
+		float dap_l1=((Util.randint(1000)/500.0f)-0.5f)*0.01f;
 		while(apval_light1+dap_l1<0.5f || apval_light1+dap_l1>1.0f) {
-			dap_l1=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.5f;
+			dap_l1=((Util.randint(1000)/500.0f)-0.5f)*0.5f;
 		}
 		apval_light1+=dap_l1;
 		
-		float dap_l2=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.01f;
+		float dap_l2=((Util.randint(1000)/500.0f)-0.5f)*0.01f;
 		while(apval_light2+dap_l2<0.5f || apval_light2+dap_l2>1.0f) {
-			dap_l2=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.5f;
+			dap_l2=((Util.randint(1000)/500.0f)-0.5f)*0.5f;
 		}
 		apval_light2+=dap_l2;
 		
-		float dap_l3=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.01f;
+		float dap_l3=((Util.randint(1000)/500.0f)-0.5f)*0.01f;
 		while(apval_light3+dap_l3<0.5f || apval_light3+dap_l3>1.0f) {
-			dap_l3=((BosonX.m.randint(1000)/500.0f)-0.5f)*0.5f;
+			dap_l3=((Util.randint(1000)/500.0f)-0.5f)*0.5f;
 		}
 		apval_light3+=dap_l3;
 		
@@ -1319,11 +1420,11 @@ public class Renderer {
 		
 		BufferedImage beam=Texture.realpha(p.get("beam"+bgset),apval, false);
 		gui.drawImage(beam,0.5f,0.2f,1,(float) beam.getHeight()/(float)winH,"BEAM",0,true);
-		gui.drawImage(Texture.recolor(new BufferedImage(p.get("title_bg").getWidth(),p.get("title_bg").getHeight(),BufferedImage.TYPE_3BYTE_BGR),new Color(fb.get(0),fb.get(1),fb.get(2)), true),0.5f,0.2f,1.2f,"BG_blank",0,true);
-		gui.drawImage(Texture.realpha(p.get("bg"+bgset),apval, false),0.5f,0.2f,1.2f,"BG",0, true);
-		gui.drawImage(Texture.realpha(p.get("l1_bg"+bgset),apval_light1, false),0.5f,0.2f,1.2f,"light1",((mtime/50000.0f)*360.0f)%360.0f, true);
-		gui.drawImage(Texture.realpha(p.get("l2_bg"+bgset),apval_light3, false),0.5f,0.2f,0.6f,"light2",-(((mtime/50000.0f)*360.0f)%360.0f), true);
-		gui.drawImage(Texture.realpha(p.get("l3_bg"+bgset),apval_light2, false),0.5f,0.2f,0.8f,"light3",((mtime/55000.0f)*360.0f)%360.0f, true);
+		gui.drawImage(Texture.recolor(new BufferedImage(p.get("title_bg").getWidth(),p.get("title_bg").getHeight(),BufferedImage.TYPE_3BYTE_BGR),new Color(fb.get(0),fb.get(1),fb.get(2)), true),0.5f,0.2f,1.2f,"BG_blank",0,true,HORIZONTAL);
+		gui.drawImage(Texture.realpha(p.get("bg"+bgset),apval, false),0.5f,0.2f,1.2f,"BG",0, true,HORIZONTAL);
+		gui.drawImage(Texture.realpha(p.get("l1_bg"+bgset),apval_light1, false),0.5f,0.2f,1.2f,"light1",((mtime/50000.0f)*360.0f)%360.0f, true,HORIZONTAL);
+		gui.drawImage(Texture.realpha(p.get("l2_bg"+bgset),apval_light3, false),0.5f,0.2f,0.6f,"light2",-(((mtime/50000.0f)*360.0f)%360.0f), true,HORIZONTAL);
+		gui.drawImage(Texture.realpha(p.get("l3_bg"+bgset),apval_light2, false),0.5f,0.2f,0.8f,"light3",((mtime/55000.0f)*360.0f)%360.0f, true,HORIZONTAL);
 		
 		int a=6*fac;
 		
@@ -1346,38 +1447,38 @@ public class Renderer {
 			}
 		}
 		
-		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[0], true),0.2f,0.5f,1.7f,"ss_button1",0,true);
-		gui.drawImage(p.get("stage"+Integer.toString(1+a)),0.2f,0.5f,0.8f,"ss_logo1",0,true);
-		if(act[0]) {gui.drawImage(p.get(discs[0]),0.2f,0.5f,0.8f,"ss_disc1",0,true);}
-		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[1], true),0.5f,0.5f,1.7f,"ss_button2",0,true);
-		gui.drawImage(p.get("stage"+Integer.toString(2+a)),0.5f,0.5f,0.8f,"ss_logo2",0,true);
-		if(act[1]) {gui.drawImage(p.get(discs[1]),0.5f,0.5f,0.8f,"ss_disc2",0,true);}
-		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[2], true),0.8f,0.5f,1.7f,"ss_button3",0,true);
-		gui.drawImage(p.get("stage"+Integer.toString(3+a)),0.8f,0.5f,0.8f,"ss_logo3",0,true);
-		if(act[2]) {gui.drawImage(p.get(discs[2]),0.8f,0.5f,0.8f,"ss_disc3",0,true);}
-		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[3], true),0.2f,0.8f,1.7f,"ss_button4",0,true);
-		gui.drawImage(p.get("stage"+Integer.toString(4+a)),0.2f,0.8f,0.8f,"ss_logo4",0,true);
-		if(act[3]) {gui.drawImage(p.get(discs[3]),0.2f,0.8f,0.8f,"ss_disc4",0,true);}
-		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[4], true),0.5f,0.8f,1.7f,"ss_button5",0,true);
-		gui.drawImage(p.get("stage"+Integer.toString(5+a)),0.5f,0.8f,0.8f,"ss_logo5",0,true);
-		if(act[4]) {gui.drawImage(p.get(discs[4]),0.5f,0.8f,0.8f,"ss_disc5",0,true);}
-		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[5], true),0.8f,0.8f,1.7f,"ss_button6",0,true);
-		gui.drawImage(p.get("stage"+Integer.toString(6+a)),0.8f,0.8f,0.8f,"ss_logo6",0,true);
-		if(act[5]) {gui.drawImage(p.get(discs[5]),0.8f,0.8f,0.8f,"ss_disc6",0,true);}
+		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[0], true),0.2f,0.5f,1.7f,"ss_button1",0,true,MINIMUM);
+		gui.drawImage(p.get("stage"+Integer.toString(1+a)),0.2f,0.5f,0.8f,"ss_logo1",0,true,MINIMUM);
+		if(act[0]) {gui.drawImage(p.get(discs[0]),0.2f,0.5f,0.8f,"ss_disc1",0,true,MINIMUM);}
+		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[1], true),0.5f,0.5f,1.7f,"ss_button2",0,true,MINIMUM);
+		gui.drawImage(p.get("stage"+Integer.toString(2+a)),0.5f,0.5f,0.8f,"ss_logo2",0,true,MINIMUM);
+		if(act[1]) {gui.drawImage(p.get(discs[1]),0.5f,0.5f,0.8f,"ss_disc2",0,true,MINIMUM);}
+		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[2], true),0.8f,0.5f,1.7f,"ss_button3",0,true,MINIMUM);
+		gui.drawImage(p.get("stage"+Integer.toString(3+a)),0.8f,0.5f,0.8f,"ss_logo3",0,true,MINIMUM);
+		if(act[2]) {gui.drawImage(p.get(discs[2]),0.8f,0.5f,0.8f,"ss_disc3",0,true,MINIMUM);}
+		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[3], true),0.2f,0.8f,1.7f,"ss_button4",0,true,MINIMUM);
+		gui.drawImage(p.get("stage"+Integer.toString(4+a)),0.2f,0.8f,0.8f,"ss_logo4",0,true,MINIMUM);
+		if(act[3]) {gui.drawImage(p.get(discs[3]),0.2f,0.8f,0.8f,"ss_disc4",0,true,MINIMUM);}
+		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[4], true),0.5f,0.8f,1.7f,"ss_button5",0,true,MINIMUM);
+		gui.drawImage(p.get("stage"+Integer.toString(5+a)),0.5f,0.8f,0.8f,"ss_logo5",0,true,MINIMUM);
+		if(act[4]) {gui.drawImage(p.get(discs[4]),0.5f,0.8f,0.8f,"ss_disc5",0,true,MINIMUM);}
+		gui.drawImage(Texture.recolor(p.get("ss_button"),colors[5], true),0.8f,0.8f,1.7f,"ss_button6",0,true,MINIMUM);
+		gui.drawImage(p.get("stage"+Integer.toString(6+a)),0.8f,0.8f,0.8f,"ss_logo6",0,true,MINIMUM);
+		if(act[5]) {gui.drawImage(p.get(discs[5]),0.8f,0.8f,0.8f,"ss_disc6",0,true,MINIMUM);}
 		
-		if(act[0]) {gui.drawImage(digits.getString(peaks[0]+"%",(int) (15*BosonX.m.rc),new Color(0,0,0)),0.12f,0.56f,1,"peak1",0,false);}
-		if(act[1]) {gui.drawImage(digits.getString(peaks[1]+"%",(int) (15*BosonX.m.rc),new Color(0,0,0)),0.42f,0.56f,1,"peak2",0,false);}
-		if(act[2]) {gui.drawImage(digits.getString(peaks[2]+"%",(int) (15*BosonX.m.rc),new Color(0,0,0)),0.72f,0.56f,1,"peak3",0,false);}
-		if(act[3]) {gui.drawImage(digits.getString(peaks[3]+"%",(int) (15*BosonX.m.rc),new Color(0,0,0)),0.12f,0.86f,1,"peak4",0,false);}
-		if(act[4]) {gui.drawImage(digits.getString(peaks[4]+"%",(int) (15*BosonX.m.rc),new Color(0,0,0)),0.42f,0.86f,1,"peak5",0,false);}
-		if(act[5]) {gui.drawImage(digits.getString(peaks[5]+"%",(int) (15*BosonX.m.rc),new Color(0,0,0)),0.72f,0.86f,1,"peak6",0,false);}
+		if(act[0]) {gui.drawImage(digits.getString(peaks[0]+"%",15,new Color(0,0,0)),0.12f,0.56f,1,"peak1",0,false,MINIMUM);}
+		if(act[1]) {gui.drawImage(digits.getString(peaks[1]+"%",15,new Color(0,0,0)),0.42f,0.56f,1,"peak2",0,false,MINIMUM);}
+		if(act[2]) {gui.drawImage(digits.getString(peaks[2]+"%",15,new Color(0,0,0)),0.72f,0.56f,1,"peak3",0,false,MINIMUM);}
+		if(act[3]) {gui.drawImage(digits.getString(peaks[3]+"%",15,new Color(0,0,0)),0.12f,0.86f,1,"peak4",0,false,MINIMUM);}
+		if(act[4]) {gui.drawImage(digits.getString(peaks[4]+"%",15,new Color(0,0,0)),0.42f,0.86f,1,"peak5",0,false,MINIMUM);}
+		if(act[5]) {gui.drawImage(digits.getString(peaks[5]+"%",15,new Color(0,0,0)),0.72f,0.86f,1,"peak6",0,false,MINIMUM);}
 		
 		BufferedImage selector=new BufferedImage(p.get("ss_button").getWidth(),p.get("ss_button").getHeight(),BufferedImage.TYPE_4BYTE_ABGR);
 		Graphics sg=selector.getGraphics();
 		sg.setColor(new Color(255,141,141));
 		((Graphics2D) sg).setStroke(new BasicStroke(4));
 		sg.drawRect(0,0,selector.getWidth(),selector.getHeight());
-		gui.drawImage(selector,rect_location,recty,1.8f,"selector",0,true);
+		gui.drawImage(selector,rect_location,recty,1.8f,"selector",0,true,MINIMUM);
 		sg.dispose();
 		
 		gui.render();
@@ -1386,8 +1487,8 @@ public class Renderer {
 	
 	public void menu_stage2(long win,int primec) { //Ready player one
 		gui.onFrame();
-		gui.drawImage(font2.getString("PRIMING DETECTOR "+Integer.toString(BosonX.m.cp.level),72,new Color(100,100,100)),0.5f,0.5f,1f,"prime",0,true);
-		gui.drawImage(font2.getString("GET READY",72,new Color(100,100,100)),0.5f,0.55f,1f,"ready",0,true);
+		gui.drawImage(font2.getString("PRIMING DETECTOR "+Integer.toString(BosonX.m.cp.level),72,new Color(100,100,100)),0.5f,0.5f,1f,"prime",0,true,VERTICAL);
+		gui.drawImage(font2.getString("GET READY",72,new Color(100,100,100)),0.5f,0.55f,1f,"ready",0,true,VERTICAL);
 		gui.render();
 	}
 	public void menu_death(long win, int primec) {
@@ -1422,26 +1523,27 @@ public class Renderer {
 		} else {
 			enter_rise=true;
 		}
+		
 		gui.onFrame();
 		glPushMatrix();
 		cam_rotation.renderRotation(); //Render cam transforms
 		glTranslatef(-cam_translation[0],-cam_translation[1],-cam_translation[2]);
-		BosonX.m.background.generate(); //Generate the background
+		BosonX.active.background.generate(); //Generate the background
 		cellsh.bind();
-		BosonX.m.background.render(); //Render our background
+		BosonX.active.background.render(); //Render our background
 		menush.bind();
 		renderLights(); //Lights....
 		glPopMatrix();
 		gui.drawImage(new Color(255,255,255),0,0.9f,1,0.1f,"bottom_bar",false);
-		gui.drawImage(font_large.getString("ESC: BACK",(int) (70*BosonX.m.rc),new Color(0,0,0)),0.03f,0.9f,1,"esc",0,false);
-		gui.drawImage(font_large.getString("ENTER: AGAIN",(int) (70*BosonX.m.rc),new Color(0,0,0)),0.7f,0.9f,1,"ent",0,false);
+		gui.drawImage(font_large.getString("ESC: BACK",70,new Color(0,0,0)),0.03f,0.9f,1,"esc",0,false,VERTICAL);
+		gui.drawImage(font_large.getString("ENTER: AGAIN",70,new Color(0,0,0)),0.97f,0.9f,1,"ent",0,false,VERTICAL,   true, false);
 		gui.drawImage(new Color(0,0,0),0,0,1,0.9f,"brightness",false);
 		gui.patches.get("brightness").alpha=0.5f;
-		gui.drawImage(font_large.getString("ENERGY:",(int) (70*BosonX.m.rc),new Color(255,255,255)),0.5f,0.45f,1,"energy",0,true);
-		gui.drawImage(digits.getString(Float.toString((float) Math.round(BosonX.m.energy*100)/100f)+"%",(int) (70*BosonX.m.rc),new Color(255,255,255)),0.5f,0.55f,1,"score",0,true);
+		gui.drawImage(font_large.getString("ENERGY:",70,new Color(255,255,255)),0.5f,0.45f,1,"energy",0,true,VERTICAL);
+		gui.drawImage(digits.getString(Float.toString((float) Math.round(BosonX.m.energy*100)/100f)+"%",70,new Color(255,255,255)),0.5f,0.55f,1,"score",0,true,VERTICAL);
 		
-		int graphX=(int) (1920.0f*0.8f*BosonX.m.rc);
-		int graphY=(int) (324.0f*BosonX.m.rc);
+		int graphX=(int) (1920.0f*0.8f*BosonX.m.wrc);
+		int graphY=(int) (324.0f*BosonX.m.hrc);
 		BufferedImage graph=new BufferedImage(graphX,graphY,BufferedImage.TYPE_3BYTE_BGR);
 		Graphics2D g=(Graphics2D)graph.getGraphics();
 		float m=BosonX.m.scores.peaks.get(BosonX.m.cp.level);
@@ -1455,14 +1557,14 @@ public class Renderer {
 		int dx=(int) ((float)(graphX-200)/(float) (data.size()-1.0f));
 		g.setColor(new Color(255,255,255));
 		for(int i=0;i<pxy.size();i++) {
-			g.setStroke(new BasicStroke(5f));
+			g.setStroke(new BasicStroke(5.0f*Math.min(BosonX.m.hrc,BosonX.m.wrc)));
 			if(i!=0) {
 				g.drawLine(inc,(int)(pxy.get(i)*0.9f),inc-dx,(int)(pxy.get(i-1)*0.9f));
 			}
 			inc+=dx;
 		}
-		digits.drawString(Float.toString((float) Math.round(m*10)/10f)+"%",0,0,(int)(20*BosonX.m.rc),g);
-		digits.drawString("0.0%",0,(int) (0.9f*graphY),(int)(20*BosonX.m.rc),g);
+		digits.drawString(Float.toString((float) Math.round(m*10)/10f)+"%",0,0,(int)(20*BosonX.m.hrc),g);
+		digits.drawString("0.0%",0,(int) (0.9f*graphY),(int)(20*BosonX.m.hrc),g);
 		g.dispose();
 		
 		gui.drawImage(graph,0.1f,0.1f,0.8f,0.3f,"graph",0,false);

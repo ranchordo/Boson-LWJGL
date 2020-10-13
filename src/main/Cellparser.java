@@ -7,6 +7,7 @@ import java.util.*;
 public class Cellparser {
 	String f_contents="";
 	public int level;
+	public int numpoles=0;
 	public void point(int stage) { //Fetch the next pattern file
 		level=stage;
 		f_contents="";
@@ -18,6 +19,7 @@ public class Cellparser {
 			f_contents=f_contents+ln+"\n";
 		}
 		s.close();
+		this.numpoles=this.parsePattern(0).numPoles;
 	}
 	public ArrayList<Pattern> parsePatterns() { //Get a list of patterns in our file (This is boooring parsing work)
 		assert !f_contents.equals("");

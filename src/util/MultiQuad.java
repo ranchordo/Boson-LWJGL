@@ -13,6 +13,10 @@ import main.BosonX;
 
 public class MultiQuad {
 	//It's like a bufferedimage, but it stores image pieces as individual Patches instead of one big image. It helps improve memory usage.
+	public static final int HORIZONTAL=0;
+	public static final int VERTICAL=1;
+	public static final int MINIMUM=2;
+	
 	public HashMap<String,Patch> patches=new HashMap<String,Patch>();
 	float xmax;
 	float xmin;
@@ -20,7 +24,7 @@ public class MultiQuad {
 	float ymin;
 	
 	private float currentEnter=0;
-	public void drawImage_raw(BufferedImage img, float x, float y, float s, String name, float r, boolean c) {
+	public Patch drawImage_raw(BufferedImage img, float x, float y, float s, String name, float r, boolean c) {
 		Patch p=new Patch();
 		p.tex=new Texture();
 		p.tex.initBI(img);
@@ -33,8 +37,9 @@ public class MultiQuad {
 		p.level=currentEnter;
 		patches.put(name,p);
 		currentEnter+=1;
+		return p;
 	}
-	public void drawImage_raw(BufferedImage img, float x, float y, float w, float h, String name, float r, boolean c) {
+	public Patch drawImage_raw(BufferedImage img, float x, float y, float w, float h, String name, float r, boolean c) {
 		Patch p=new Patch();
 		p.tex=new Texture();
 		p.tex.initBI(img);
@@ -47,24 +52,41 @@ public class MultiQuad {
 		p.level=currentEnter;
 		patches.put(name,p);
 		currentEnter+=1;
+		return p;
 	}
 	
-	public void drawImage(BufferedImage img, float x, float y, String name, float r, boolean c) {
-		drawImage_raw(img,coordx(x),coordy(y),1,name,r,c);
+	public void drawImage(BufferedImage img, float x, float y, String name, float r, boolean c, boolean... layouts) {
+		Patch p=drawImage_raw(img,coordx(x),coordy(y),1,name,r,c);
+		if(layouts.length==2) {
+			p.right=layouts[0];
+			p.bottom=layouts[1];
+		}
 	}
-	public void drawImage(BufferedImage img, float x, float y, float s, String name, float r, boolean c) {
-		drawImage_raw(img,coordx(x),coordy(y),s*BosonX.m.rc,name,r,c);
+	public void drawImage(BufferedImage img, float x, float y, float s, String name, float r, boolean c, int scaleMode, boolean... layouts) {
+		Patch p=drawImage_raw(img,coordx(x),coordy(y),s*(scaleMode==0?BosonX.m.wrc:(scaleMode==1?BosonX.m.hrc:BosonX.m.mrc)),name,r,c);
+		if(layouts.length==2) {
+			p.right=layouts[0];
+			p.bottom=layouts[1];
+		}
 	}
-	public void drawImage(BufferedImage img, float x, float y, float w, float h, String name, float r, boolean c) {
-		drawImage_raw(img,coordx(x),coordy(y),coordw(w,img),coordh(h,img),name,r,c);
+	public void drawImage(BufferedImage img, float x, float y, float w, float h, String name, float r, boolean c, boolean... layouts) {
+		Patch p=drawImage_raw(img,coordx(x),coordy(y),coordw(w,img),coordh(h,img),name,r,c);
+		if(layouts.length==2) {
+			p.right=layouts[0];
+			p.bottom=layouts[1];
+		}
 	}
 	
-	public void drawImage(Color col, float x, float y, float w, float h, String name, boolean c) {
+	public void drawImage(Color col, float x, float y, float w, float h, String name, boolean c, boolean... layouts) {
 		BufferedImage img=new BufferedImage(10,10,BufferedImage.TYPE_4BYTE_ABGR);
 		Graphics g=img.getGraphics();
 		g.setColor(col);
 		g.fillRect(0,0,img.getWidth(),img.getHeight());
-		drawImage_raw(img,coordx(x),coordy(y),coordw(w,img),coordh(h,img),name,0,c);
+		Patch p=drawImage_raw(img,coordx(x),coordy(y),coordw(w,img),coordh(h,img),name,0,c);
+		if(layouts.length==2) {
+			p.right=layouts[0];
+			p.bottom=layouts[1];
+		}
 		g.dispose();
 	}
 	public void onFrame() {
@@ -97,8 +119,8 @@ public class MultiQuad {
 		return -ymax*h*2.0f;
 	}
 	public void calcConsts() {
-		xmax=(float) (2*(16.0/9.0)*Math.tan(Math.toRadians(BosonX.m.r.fov/2.0f)));
-		xmin=(float) (-2*(16.0/9.0)*Math.tan(Math.toRadians(BosonX.m.r.fov/2.0f)));
+		xmax=(float) (2*(BosonX.m.aspectRatio)*Math.tan(Math.toRadians(BosonX.m.r.fov/2.0f)));
+		xmin=(float) (-2*(BosonX.m.aspectRatio)*Math.tan(Math.toRadians(BosonX.m.r.fov/2.0f)));
 		ymax=(float) (2*Math.tan(Math.toRadians(BosonX.m.r.fov/2.0f)));
 		ymin=(float) (-2*Math.tan(Math.toRadians(BosonX.m.r.fov/2.0f)));
 	}

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import javax.imageio.ImageIO;
 
 import main.BosonX;
+import util.Util;
 
 public class Bg { //This is the background of particles that go by us as we run the level.
 	public ArrayList<Particle> particles=new ArrayList<Particle>();
@@ -133,12 +134,12 @@ public class Bg { //This is the background of particles that go by us as we run 
 			n.g=partcolor.y;
 			n.b=partcolor.z;
 			n.a=partcolor.w;
-			if(randomXR) {n.xr=BosonX.m.randint(180);}
+			if(randomXR) {n.xr=Util.randint(180);}
 			else {n.xr=0;}
 			if(HSBrandom) {
 				float f=0;
 				if(Hmin!=Hmax) {
-					f=(BosonX.m.randint((int) ((Hmax-Hmin)*1000f))/1000.0f)+Hmin;
+					f=(Util.randint((int) ((Hmax-Hmin)*1000f))/1000.0f)+Hmin;
 				} else {
 					f=Hmin;
 				}
@@ -149,26 +150,26 @@ public class Bg { //This is the background of particles that go by us as we run 
 				n.b=rgb.z;
 				n.a=rgb.w;
 			}
-			n.zr=main.BosonX.m.randint(360);
+			n.zr=Util.randint(360);
 			if(numPoles!=0 && xt>1) {
-				n.zr=main.BosonX.m.randint(numPoles)*(360.0f/numPoles);
-				n.xt=main.BosonX.m.randint((int) (200*xt))/100.0f - xt;
+				n.zr=Util.randint(numPoles)*(360.0f/numPoles);
+				n.xt=Util.randint((int) (200*xt))/100.0f - xt;
 			}
-			n.zt=main.BosonX.m.r.cam_translation[2]+main.BosonX.m.randint((int) main.BosonX.background_gen*1000)/1000.0f;
+			n.zt=main.BosonX.m.r.cam_translation[2]+Util.randint((int) main.BosonX.background_gen*1000)/1000.0f;
 			
 			n.w=w;
 			n.l=l;
 			n.initGeo();
 			
-			n.vz=-main.BosonX.m.randint((int) (v_variance*1000f))/1000f;
+			n.vz=-Util.randint((int) (v_variance*1000f))/1000f;
 			
 			if(t_min!=t_max) {
-				n.vt=main.BosonX.m.randint((int) ((t_max-t_min)*1000f))/1000f+t_min;
+				n.vt=Util.randint((int) ((t_max-t_min)*1000f))/1000f+t_min;
 			} else {
 				n.vt=t_max;
 			}
 			
-			n.yd=main.BosonX.particle_depth+main.BosonX.m.randint((int) (y_variance*1000f))/1000f;
+			n.yd=main.BosonX.particle_depth+Util.randint((int) (y_variance*1000f))/1000f;
 		}
 	}
 	public void flushParticles() { //Reinit all particles
@@ -177,12 +178,12 @@ public class Bg { //This is the background of particles that go by us as we run 
 			n.g=partcolor.y;
 			n.b=partcolor.z;
 			n.a=partcolor.w;
-			if(randomXR) {n.xr=BosonX.m.randint(180);}
+			if(randomXR) {n.xr=Util.randint(180);}
 			else {n.xr=0;}
 			if(HSBrandom) {
 				float f=0;
 				if(Hmin!=Hmax) {
-					f=(BosonX.m.randint((int) ((Hmax-Hmin)*1000f))/1000.0f)+Hmin;
+					f=(Util.randint((int) ((Hmax-Hmin)*1000f))/1000.0f)+Hmin;
 				} else {
 					f=Hmin;
 				}
@@ -193,26 +194,26 @@ public class Bg { //This is the background of particles that go by us as we run 
 				n.b=rgb.z;
 				n.a=rgb.w;
 			}
-			n.zr=main.BosonX.m.randint(360);
+			n.zr=Util.randint(360);
 			if(numPoles!=0 && xt>1) {
-				n.zr=main.BosonX.m.randint(numPoles)*(360.0f/numPoles);
-				n.xt=main.BosonX.m.randint((int) (200*xt))/100.0f - xt;
+				n.zr=Util.randint(numPoles)*(360.0f/numPoles);
+				n.xt=Util.randint((int) (200*xt))/100.0f - xt;
 			}
-			n.zt=main.BosonX.m.r.cam_translation[2]+main.BosonX.m.randint((int) main.BosonX.background_gen*1000)/1000.0f;
+			n.zt=main.BosonX.m.r.cam_translation[2]+Util.randint((int) main.BosonX.background_gen*1000)/1000.0f;
 			
 			n.w=w;
 			n.l=l;
 			n.initGeo();
 			
-			n.vz=-main.BosonX.m.randint((int) (v_variance*1000f))/1000f;
+			n.vz=-Util.randint((int) (v_variance*1000f))/1000f;
 			
 			if(t_min!=t_max) {
-				n.vt=main.BosonX.m.randint((int) ((t_max-t_min)*1000f))/1000f+t_min;
+				n.vt=Util.randint((int) ((t_max-t_min)*1000f))/1000f+t_min;
 			} else {
 				n.vt=t_max;
 			}
 			
-			n.yd=main.BosonX.particle_depth+main.BosonX.m.randint((int) (y_variance*1000f))/1000f;
+			n.yd=main.BosonX.particle_depth+Util.randint((int) (y_variance*1000f))/1000f;
 		}
 	}
 	public void render() { //Render our background
